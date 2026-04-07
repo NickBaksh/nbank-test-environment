@@ -1,0 +1,645 @@
+#Запросы для подготовки окружения (предусловия)
+#1. Авторизация под аккаунтом админа
+###Get auth token for admin Authorization: Basic YWRtaW46YWRtaW4=
+POST http://localhost:4111/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "admin"
+}
+
+
+#2. Создание нового клиента (Кейт)
+###Create a new user Kate
+POST http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+{
+  "username": "kate1998",
+  "password": "verysTRongPassword33$",
+  "role": "USER"
+}
+
+
+###Create a new user Alex
+#3. Создание нового клиента Алекс
+POST http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+{
+  "username": "Alex1000",
+  "password": "checkingMyNewPassword100#",
+  "role": "USER"
+}
+
+
+###Login by a new user Kate Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+#4. Получение токена для авторизации для Кейт
+POST http://localhost:4111/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "username": "kate1998",
+    "password": "verysTRongPassword33$"
+}
+
+###Create new account for Kate
+# 5. Создание первого аккаунта (счёта) для Кейт
+POST http://localhost:4111/api/v1/accounts
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+###Create second account for Kate
+# 6. Создание второго аккаунта (счёта) для Кейт
+POST http://localhost:4111/api/v1/accounts
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+
+###Get info about Kate's account
+# 7. Проверка, что у Кейт созданы 2 аккаунта (счёта)
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Login by a user Alex Authorization: Basic QWxleDEwMDA6Y2hlY2tpbmdNeU5ld1Bhc3N3b3JkMTAwIw==
+# 8. Получение токена авторизации для Алекса
+POST http://localhost:4111/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "username": "Alex1000",
+    "password": "checkingMyNewPassword100#"
+}
+
+###Create new account for Alex
+# 9. Создание аккаунта (счёта) для Алекса
+POST http://localhost:4111/api/v1/accounts
+Content-Type: application/json
+Authorization: Basic QWxleDEwMDA6Y2hlY2tpbmdNeU5ld1Bhc3N3b3JkMTAwIw==
+
+###Get info about Alex's account
+# 10. Проверка, что у Алекса был создан аккаунт
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+
+
+
+#Запросы для проверки размещения депозита на аккаунте
+# 1. Размещение суммы -0.99 на депозите Кейт --> Ожидаемый результат 400 Ошибка
+### Deposit $-0.99 on Kate's account
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": -0.99
+}
+
+
+### Deposit $0 on Kate's account
+# 2. Размещение суммы 0 на депозите Кейт --> Ожидаемый результат 400 Ошибка
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": 0
+}
+
+### Deposit $0.01 on Kate's account
+# 3. Размещение суммы 0.01 на депозите Кейт --> Ожидаемый результат 200 Успех
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": 0.01
+}
+
+###Get info about Kate's account
+# Проверка, что у Кейт обновилась сумма на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deposit $4999.99 on Kate's account
+# 4. Размещение суммы 4999.99 на депозите Кейт --> Ожидаемый результат 200 Успех
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": 4999.99
+}
+
+###Get info about Kate's account
+# Проверка, что у Кейт обновилась сумма на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deposit $5000 on Kate's account
+# 5. Размещение суммы 5000 на депозите Кейт --> Ожидаемый результат 200 Успех
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": 5000
+}
+
+###Get info about Kate's account
+# Проверка, что у Кейт обновилась сумма на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deposit $5000.01 on Kate's account
+# 6. Размещение суммы 5000.01 на депозите Кейт --> Ожидаемый результат 400 Ошибка
+# Найден БАГ, согласно требованиям максимальная сумма депозита -> $5000
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 1,
+  "balance": 5000.01
+}
+
+###Get info about Kate's account
+# Проверка, что у Кейт обновилась сумма на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deposit money on someone account
+# 7. Размещение суммы на чужом аккаунте --> Ожидаемый результат 403 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 3,
+  "balance": 5000
+}
+
+###Get info about bank accounts
+# Проверка, что у Алекса не появились новые деньги на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deposit money on invalid account
+# 8. Размещение суммы на несуществующем аккаунте --> Ожидаемый результат 403 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/deposit
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "id": 5,
+  "balance": 5000
+}
+
+###Get info about bank accounts
+# Проверка, что у Алекса или Кейт не появились новые деньги на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+
+#Запросы для проверки перевода денег с одного аккаунта на другой
+# 1. Перевод денег на сумму -1 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+###Sending $-0.99 from Kate's account to Alex's account
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": -0.99
+}
+
+###Sending $0 from Kate's account to Alex's account
+# 2. Перевод денег на сумму 0 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 0
+}
+
+###Sending $0.01 from Kate's account to Alex's account
+# 3. Перевод денег на сумму 0.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 0.01
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса появились новые деньги на счёте
+# Проверка, что у Кейт списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $9999.99 from Kate's account to Alex's account
+# 5. Перевод денег на сумму 9999.99 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 9999.99
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса появились новые деньги на счёте
+# Проверка, что у Кейт списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $10000 from Kate's account to Alex's account
+# 5. Перевод денег на сумму 10000 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 10000
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса появились новые деньги на счёте
+# Проверка, что у Кейт списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $10000.01 from Kate's account to Alex's account
+# 6. Перевод денег на сумму 10000.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+# Найден БАГ, согласно требованиям сумма перевода не должна превышать $10000
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 10000.01
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса и Кейт не изменились суммы на счёте
+# БАГ, Алексу пришла сумма 10001, у Кейт списалась сумма 10001
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $0.01 from Kate's account to Alex's account
+# 7. Перевод денег на сумму 0.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 0.01
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса появились новые деньги на счёте
+# Проверка, что у Кейт списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending sum > than Kate's account to Alex's account
+# 8. Перевод денег на сумму больше чем есть на аккаунте (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 999999
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса и Кейт не изменились суммы на счёте
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $1 from Kate's account to another Kate's account
+# 9. Перевод денег на сумму 1 между своими аккаунтами (Кейт -> Кейт) --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 2,
+  "amount": 1
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса появились новые деньги на счёте
+# Проверка, что у Кейт списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending $1 from Kate's account to invalid account
+# 10. Перевод денег на сумму 1 на несуществующий аккаунт (Кейт -> ???) --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 999,
+  "amount": 1
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса не появились новые деньги на счёте
+# Проверка, что у Кейт не списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending money without authorization
+# 11. Перевод денег на сумму 1 без авторизации --> Ожидаемый результат 401 Ошибка
+# Не авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 3,
+  "amount": 1
+}
+
+###Sending $1000 from Alex's account to Kate's account
+# 12. Перевод денег на сумму 1 без авторизации --> Ожидаемый результат 200 Успех
+# Авторизован под клиентом Алекс
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic QWxleDEwMDA6Y2hlY2tpbmdNeU5ld1Bhc3N3b3JkMTAwIw==
+
+
+{
+  "senderAccountId": 3,
+  "receiverAccountId": 1,
+  "amount": 1000
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Кейт появились новые деньги на счёте
+# Проверка, что у Алекса списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+
+###Sending money with incorrect authorization
+# 13. Перевод денег на сумму 1 с авторизацией на Кейт, но с аккаунта Алекса --> Ожидаемый результат 403 Ошибка
+# Авторизован под клиентом Кейт
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 3,
+  "receiverAccountId": 1,
+  "amount": 1
+}
+
+###Get info about Alex's bank account
+# Проверка, что у Алекса не появились новые деньги на счёте
+# Проверка, что у Кейт не списались деньги со счёта
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###Sending money to the same account
+# 14. Перевод денег на сумму 1 на тот же аккаунт --> Ожидаемый результат 400 Ошибка
+# Авторизован под клиентом Кейт
+# Возможно БАГ, в требованиях не указано можно ли переводить деньги на тот же аккаунт? Нелогично
+POST http://localhost:4111/api/v1/accounts/transfer
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "senderAccountId": 1,
+  "receiverAccountId": 1,
+  "amount": 1
+}
+
+###Get info about Kate's bank account
+# Проверка, что у Кейт не было новых транзакций
+GET http://localhost:4111/api/v1/admin/users
+Content-Type: application/json
+Authorization: Basic YWRtaW46YWRtaW4=
+
+
+#Запросы для проверки изменения имени профиля
+# 1. Изменить имя профиля (Кейт) на "Екатерина Великая" --> Ожидаемый результат 200 Успех
+### Change the name on Kate's account to "Екатерина Великая"
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина Великая"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт обновились
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина Великая Александровна"
+# 2. Изменить имя профиля (Кейт) на "Екатерина Великая Александровна" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина Великая Александровна"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина"
+# 3. Изменить имя профиля (Кейт) на "Екатерина" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to " "
+# 4. Изменить имя профиля (Кейт) на " " --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": " "
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина12 Великая"
+# 5. Изменить имя профиля (Кейт) на "Екатерина12 Великая" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина12 Великая"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина Великая12"
+# 6. Изменить имя профиля (Кейт) на "Екатерина Великая12" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина Великая12"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екат&рина Великая"
+# 7. Изменить имя профиля (Кейт) на "Екат&рина Великая" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екат&рина Великая"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина Велик@я"
+# 8. Изменить имя профиля (Кейт) на "Екатерина Велик@я" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина Велик@я"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+### Change the name on Kate's account to "Екатерина_Великая"
+# 9. Изменить имя профиля (Кейт) на "Екатерина_Великая" --> Ожидаемый результат 400 Ошибка
+# Нашел БАГ, согласно требованиям -> имя в профиле это два слова, состоящих из букв, разделенных пробелом
+PUT http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
+{
+  "name": "Екатерина_Великая"
+}
+
+### Check Kate's profile
+# Проверить, что данные в профиле Кейт не изменились
+# Баг, имя в профиле изменилось
+GET http://localhost:4111/api/v1/customer/profile
+Content-Type: application/json
+Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
