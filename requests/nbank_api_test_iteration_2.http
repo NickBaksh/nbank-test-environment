@@ -642,3 +642,4 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 GET http://localhost:4111/api/v1/customer/profile
 Content-Type: application/json
 Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
+
