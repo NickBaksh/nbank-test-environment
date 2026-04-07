@@ -1,13 +1,7 @@
-###Get auth token Authorization: Basic YWRtaW46YWRtaW4=
-
-POST http://localhost:4111/api/v1/auth/login
+GET http://localhost:4111/api/v1/auth/login
 Content-Type: application/json
 
 {
     "username": "admin",
     "password": "admin"
 }
-
-###GET some
-GET http://localhost:4111/api/v1/admin/users
-Authorization: Basic YWRtaW46YWRtaW4=
