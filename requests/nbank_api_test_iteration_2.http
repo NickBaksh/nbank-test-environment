@@ -3,6 +3,7 @@
 ###Get auth token for admin Authorization: Basic YWRtaW46YWRtaW4=
 POST http://localhost:4111/api/v1/auth/login
 Content-Type: application/json
+
 {
     "username": "admin",
     "password": "admin"
@@ -90,15 +91,15 @@ Authorization: Basic YWRtaW46YWRtaW4=
 
 
 #Запросы для проверки размещения депозита на аккаунте
-# 1. Размещение суммы -1 на депозите Кейт --> Ожидаемый результат 400 Ошибка
-### Deposit $-1 on Kate's account
+# 1. Размещение суммы -0.99 на депозите Кейт --> Ожидаемый результат 400 Ошибка
+### Deposit $-0.99 on Kate's account
 POST http://localhost:4111/api/v1/accounts/deposit
 Content-Type: application/json
 Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 
 {
   "id": 1,
-  "balance": -1
+  "balance": -0.99
 }
 
 
@@ -113,15 +114,15 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
   "balance": 0
 }
 
-### Deposit $1 on Kate's account
-# 3. Размещение суммы 1 на депозите Кейт --> Ожидаемый результат 200 Успех
+### Deposit $0.01 on Kate's account
+# 3. Размещение суммы 0.01 на депозите Кейт --> Ожидаемый результат 200 Успех
 POST http://localhost:4111/api/v1/accounts/deposit
 Content-Type: application/json
 Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 
 {
   "id": 1,
-  "balance": 1
+  "balance": 0.01
 }
 
 ###Get info about Kate's account
@@ -130,15 +131,15 @@ GET http://localhost:4111/api/v1/admin/users
 Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
-### Deposit $4999 on Kate's account
-# 4. Размещение суммы 4999 на депозите Кейт --> Ожидаемый результат 200 Успех
+### Deposit $4999.99 on Kate's account
+# 4. Размещение суммы 4999.99 на депозите Кейт --> Ожидаемый результат 200 Успех
 POST http://localhost:4111/api/v1/accounts/deposit
 Content-Type: application/json
 Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 
 {
   "id": 1,
-  "balance": 4999
+  "balance": 4999.99
 }
 
 ###Get info about Kate's account
@@ -164,8 +165,8 @@ GET http://localhost:4111/api/v1/admin/users
 Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
-### Deposit $5001 on Kate's account
-# 6. Размещение суммы 5001 на депозите Кейт --> Ожидаемый результат 400 Ошибка
+### Deposit $5000.01 on Kate's account
+# 6. Размещение суммы 5000.01 на депозите Кейт --> Ожидаемый результат 400 Ошибка
 # Найден БАГ, согласно требованиям максимальная сумма депозита -> $5000
 POST http://localhost:4111/api/v1/accounts/deposit
 Content-Type: application/json
@@ -173,7 +174,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 
 {
   "id": 1,
-  "balance": 5001
+  "balance": 5000.01
 }
 
 ###Get info about Kate's account
@@ -201,7 +202,7 @@ Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
 ### Deposit money on invalid account
-# 8. Размещение суммы на чужом аккаунте --> Ожидаемый результат 403 Ошибка
+# 8. Размещение суммы на несуществующем аккаунте --> Ожидаемый результат 403 Ошибка
 # Авторизован под клиентом Кейт
 POST http://localhost:4111/api/v1/accounts/deposit
 Content-Type: application/json
@@ -222,7 +223,7 @@ Authorization: Basic YWRtaW46YWRtaW4=
 #Запросы для проверки перевода денег с одного аккаунта на другой
 # 1. Перевод денег на сумму -1 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
 # Авторизован под клиентом Кейт
-###Sending $-1 from Kate's account to Alex's account
+###Sending $-0.99 from Kate's account to Alex's account
 POST http://localhost:4111/api/v1/accounts/transfer
 Content-Type: application/json
 Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
@@ -230,7 +231,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 {
   "senderAccountId": 1,
   "receiverAccountId": 3,
-  "amount": -1
+  "amount": -0.99
 }
 
 ###Sending $0 from Kate's account to Alex's account
@@ -246,8 +247,8 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
   "amount": 0
 }
 
-###Sending $1 from Kate's account to Alex's account
-# 3. Перевод денег на сумму 1 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+###Sending $0.01 from Kate's account to Alex's account
+# 3. Перевод денег на сумму 0.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
 # Авторизован под клиентом Кейт
 POST http://localhost:4111/api/v1/accounts/transfer
 Content-Type: application/json
@@ -256,7 +257,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 {
   "senderAccountId": 1,
   "receiverAccountId": 3,
-  "amount": 1
+  "amount": 0.01
 }
 
 ###Get info about Alex's bank account
@@ -266,8 +267,8 @@ GET http://localhost:4111/api/v1/admin/users
 Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
-###Sending $9999 from Kate's account to Alex's account
-# 5. Перевод денег на сумму 9999 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+###Sending $9999.99 from Kate's account to Alex's account
+# 5. Перевод денег на сумму 9999.99 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
 # Авторизован под клиентом Кейт
 POST http://localhost:4111/api/v1/accounts/transfer
 Content-Type: application/json
@@ -276,7 +277,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 {
   "senderAccountId": 1,
   "receiverAccountId": 3,
-  "amount": 9999
+  "amount": 9999.99
 }
 
 ###Get info about Alex's bank account
@@ -306,8 +307,8 @@ GET http://localhost:4111/api/v1/admin/users
 Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
-###Sending $10001 from Kate's account to Alex's account
-# 6. Перевод денег на сумму 10001 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
+###Sending $10000.01 from Kate's account to Alex's account
+# 6. Перевод денег на сумму 10000.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 400 Ошибка
 # Авторизован под клиентом Кейт
 # Найден БАГ, согласно требованиям сумма перевода не должна превышать $10000
 POST http://localhost:4111/api/v1/accounts/transfer
@@ -317,7 +318,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 {
   "senderAccountId": 1,
   "receiverAccountId": 3,
-  "amount": 10001
+  "amount": 10000.01
 }
 
 ###Get info about Alex's bank account
@@ -327,8 +328,8 @@ GET http://localhost:4111/api/v1/admin/users
 Content-Type: application/json
 Authorization: Basic YWRtaW46YWRtaW4=
 
-###Sending $0.1 from Kate's account to Alex's account
-# 7. Перевод денег на сумму 0.1 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
+###Sending $0.01 from Kate's account to Alex's account
+# 7. Перевод денег на сумму 0.01 на другой аккаунт (Кейт -> Алекс) --> Ожидаемый результат 200 Успех
 # Авторизован под клиентом Кейт
 POST http://localhost:4111/api/v1/accounts/transfer
 Content-Type: application/json
@@ -337,7 +338,7 @@ Authorization: Basic a2F0ZTE5OTg6dmVyeXNUUm9uZ1Bhc3N3b3JkMzMk
 {
   "senderAccountId": 1,
   "receiverAccountId": 3,
-  "amount": 0.1
+  "amount": 0.01
 }
 
 ###Get info about Alex's bank account
