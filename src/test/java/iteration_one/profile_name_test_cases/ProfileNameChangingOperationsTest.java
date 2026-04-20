@@ -1,48 +1,46 @@
 package iteration_one.profile_name_test_cases;
 
-import io.restassured.http.ContentType;
 import iteration_one.BaseTest;
-import org.apache.http.HttpStatus;
+import models.UpdateCustomerProfileRequest;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import requests.requesters.put.UpdateCustomerProfileRequester;
+import specs.RequestSpecs;
+import specs.ResponseSpecs;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ProfileNameChangingOperationsTest extends BaseTest {
 
-    @Test
+    @ParameterizedTest
+    @CsvSource({
+            "Catherine Great"
+    })
     @DisplayName("Пользователь может изменить имя профиля на имя из двух слов")
-    public void userCanChangeProfileNameToTwoWordsTest() {
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                           "name": "Catherine Great"
-                        }
-                        """)
-                .put("/api/v1/customer/profile")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_OK)
-                .body("customer.name", equalTo("Catherine Great"))
+    public void userCanChangeProfileNameToTwoWordsTest(String profileName) {
+        String profileNameBefore = getCustomerProfileName(USER_KATE);
+
+        UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
+                .builder()
+                .name(profileName)
+                .build();
+
+        new UpdateCustomerProfileRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.requestReturnsOK())
+                .put(request)
                 .body("message", equalTo("Profile updated successfully"));
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .get("/api/v1/customer/profile")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_OK)
-                .body("name", equalTo("Catherine Great"));
+        String profileNameAfter = getCustomerProfileName(USER_KATE);
+
+        softly.assertThat(profileNameAfter)
+                .as("Profile name should be updated to " + profileName)
+                .isEqualTo(profileName);
+
+        softly.assertThat(profileNameAfter)
+                .as("Profile name should change")
+                .isNotEqualTo(profileNameBefore);
     }
 
     @ParameterizedTest
@@ -60,40 +58,49 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
     @DisplayName("Пользователь не может изменить имя профиля, " +
             "если оно не соответствует формату 'Слово пробел Слово'")
     public void userCannotChangeProfileNameNotMatchingTwoWordsFormatTest(String profileName) {
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                           "name": "%s"
-                        }
-                        """.formatted(profileName))
-                .put("/api/v1/customer/profile")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
+        String profileNameBefore = getCustomerProfileName(USER_KATE);
+
+        UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
+                .builder()
+                .name(profileName)
+                .build();
+
+        new UpdateCustomerProfileRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .put(request)
                 .body(equalTo("Name must contain two words with letters only"));
+
+        String profileNameAfter = getCustomerProfileName(USER_KATE);
+
+        softly.assertThat(profileNameAfter)
+                .as("Profile name should not be updated")
+                .isEqualTo(profileNameBefore);
     }
 
-    @Test
+    @ParameterizedTest
+    @CsvSource({
+            "Екатерина Великая"
+    })
     @DisplayName("Пользователь не может использовать кириллицу в имени")
-    public void userCannotUseCyrillicLettersInNameTest() {
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                           "name": "Екатерина Великая"
-                        }
-                        """)
-                .put("/api/v1/customer/profile")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
+    public void userCannotUseCyrillicLettersInNameTest(String profileName) {
+        String profileNameBefore = getCustomerProfileName(USER_KATE);
+
+        UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
+                .builder()
+                .name(profileName)
+                .build();
+
+        new UpdateCustomerProfileRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .put(request)
                 .body(equalTo("Name must contain two words with letters only"));
+
+        String profileNameAfter = getCustomerProfileName(USER_KATE);
+
+        softly.assertThat(profileNameAfter)
+                .as("Profile name should not be updated")
+                .isEqualTo(profileNameBefore);
     }
 }
