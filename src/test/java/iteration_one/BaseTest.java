@@ -4,7 +4,6 @@ import io.restassured.http.ContentType;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.baseURI;
