@@ -4,6 +4,7 @@ import io.restassured.http.ContentType;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.baseURI;
@@ -92,5 +93,40 @@ public class BaseTest {
                 .extract()
                 .jsonPath()
                 .getInt("id");
+    }
+
+    public static double getBalanceByAccountId(String authToken, int accountId) {
+        Number balance = given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .header("Authorization", authToken)
+                .get("/api/v1/customer/accounts")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .extract().body().path("find { it.id == " + accountId + " }.balance");
+        return balance.doubleValue();
+    }
+
+    public static double getCurrentBalanceKateFirstAccount() {
+        return getBalanceByAccountId(KATE_AUTH_TOKEN, KATE_ACCOUNT_ID_FIRST);
+    }
+
+    public static double getCurrentBalanceKateSecondAccount() {
+        return getBalanceByAccountId(KATE_AUTH_TOKEN, KATE_ACCOUNT_ID_SECOND);
+    }
+
+    public static double getCurrentBalanceAlexFirstAccount() {
+        return getBalanceByAccountId(ALEX_AUTH_TOKEN, ALEX_ACCOUNT_ID_FIRST);
+    }
+
+    public static String getKateProfileName() {
+            return given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .header("Authorization", KATE_AUTH_TOKEN)
+                .get("/api/v1/customer/profile")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .extract().body().path("name");
     }
 }

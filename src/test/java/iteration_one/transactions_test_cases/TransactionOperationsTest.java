@@ -3,14 +3,16 @@ package iteration_one.transactions_test_cases;
 import io.restassured.http.ContentType;
 import iteration_one.BaseTest;
 import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static io.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 public class TransactionOperationsTest extends BaseTest {
     @BeforeEach
@@ -34,19 +36,37 @@ public class TransactionOperationsTest extends BaseTest {
                     .post("/api/v1/accounts/deposit")
                     .then()
                     .statusCode(HttpStatus.SC_OK);
-                    //не добавил проверку на появлении депозита на аккаунте,
-                    //показалось довольно сложным для этого уровня
         }
+
+        given()
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .header("Authorization", ALEX_AUTH_TOKEN)
+                .body("""
+                         {
+                          "id": %s,
+                          "balance": 5000
+                        }
+                        """.formatted(ALEX_ACCOUNT_ID_FIRST))
+                .post("/api/v1/accounts/deposit")
+                .then()
+                .statusCode(HttpStatus.SC_OK);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "0.01, 200",
-            "9999.99, 200",
-            "10000, 200"
+            "0.01",
+            "9999.99",
+            "10000"
     })
     @DisplayName("Проверка отправки валидной суммы на аккаунт другого человека")
-    public void userCanTransferMoneyToAnotherAccountTest(float transferSum) {
+    public void userCanTransferMoneyToAnotherAccountTest(double transferSum) {
+        double kateBalanceBefore = getCurrentBalanceKateFirstAccount();
+        double kateExpectedBalance = kateBalanceBefore - transferSum;
+
+        double alexBalanceBefore = getCurrentBalanceAlexFirstAccount();
+        double alexExpectedBalance = alexBalanceBefore + transferSum;
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -64,16 +84,35 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_OK)
                 .body("message", containsString("Transfer successful"))
-                .body("amount", is(equalTo(transferSum)));
+                .body("amount", equalTo((float) transferSum));
+
+        double kateActualBalance = getCurrentBalanceKateFirstAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should be decreased by " + transferSum);
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should be increased by " + transferSum);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "-0.01, 400",
-            "0, 400"
+            "-0.01, Transfer amount must be at least 0.01",
+            "0, Transfer amount must be at least 0.01",
+            "10000.01, Transfer amount cannot exceed 10000"
     })
     @DisplayName("Проверка невозможности отправки невалидной суммы на аккаунт другого человека")
-    public void userCannotTransferInvalidSumToAnotherAccountTest(float transferSum, int expectedResponse) {
+    public void userCannotTransferInvalidSumToAnotherAccountTest(double transferSum, String expectedResponse) {
+        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
+        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -89,31 +128,31 @@ public class TransactionOperationsTest extends BaseTest {
                 .post("/api/v1/accounts/transfer")
                 .then()
                 .log().all()
-                .statusCode(expectedResponse)
-                .body(equalTo("Transfer amount must be at least 0.01"));
-
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 10000.01
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, ALEX_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Transfer amount cannot exceed 10000"));
+                .body(equalTo(expectedResponse));
+
+        double kateActualBalance = getCurrentBalanceKateFirstAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not decrease");
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should not increase");
     }
 
     @Test
     @DisplayName("Проверка невозможности отправки суммы больше чем есть на счёте")
     public void userCannotTransferMoreMoneyThanHaveTest() {
+        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
+        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -131,11 +170,29 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+
+        double kateActualBalance = getCurrentBalanceKateSecondAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not change");
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should not change");
     }
 
     @Test
     @DisplayName("Проверка перевода между своими счетами")
     public void userCanTransferMoneyBetweenAccountsTest() {
+        double kateFirstAccountExpectedBalance = getCurrentBalanceKateFirstAccount() - 1;
+        double kateSecondAccountExpectedBalance = getCurrentBalanceKateSecondAccount() + 1;
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -153,12 +210,29 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_OK)
                 .body("message", containsString("Transfer successful"))
-                .body("amount", is(1.0f));
+                .body("amount", equalTo((float) 1.0));
+
+        double kateFirstAccountActualBalance = getCurrentBalanceKateFirstAccount();
+        double kateSecondAccountActualBalance = getCurrentBalanceKateSecondAccount();
+
+        Assertions.assertEquals(
+                kateFirstAccountExpectedBalance,
+                kateFirstAccountActualBalance,
+                0.01,
+                "Kate's first account balance should decrease by 1");
+
+        Assertions.assertEquals(
+                kateSecondAccountExpectedBalance,
+                kateSecondAccountActualBalance,
+                0.01,
+                "Kate's second account balance should increase by 1");
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода на несуществующий счёт")
     public void userCannotTransferMoneyToNonExistentAccountTest() {
+        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -176,11 +250,22 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+
+        double kateActualBalance = getCurrentBalanceKateFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not change");
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода без авторизации")
     public void userCannotTransferMoneyWithoutAuthorizationTest() {
+        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
+        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -196,11 +281,31 @@ public class TransactionOperationsTest extends BaseTest {
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.SC_UNAUTHORIZED);
+
+        double kateActualBalance = getCurrentBalanceKateFirstAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not change");
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should not change");
     }
 
     @Test
     @DisplayName("Проверка перевода от одного клиента другому. Возврат от Алекса к Кейт")
     public void userCanTransferMoneyToSenderTest() {
+        double transferAmount = 1111;
+
+        double kateExpectedBalance = getCurrentBalanceKateSecondAccount() + transferAmount;
+        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount() - transferAmount;
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -210,20 +315,38 @@ public class TransactionOperationsTest extends BaseTest {
                         {
                           "senderAccountId": %s,
                           "receiverAccountId": %s,
-                          "amount": 1111
+                          "amount": %s
                         }
-                        """.formatted(ALEX_ACCOUNT_ID_FIRST, KATE_ACCOUNT_ID_SECOND))
+                        """.formatted(ALEX_ACCOUNT_ID_FIRST, KATE_ACCOUNT_ID_SECOND, transferAmount))
                 .post("/api/v1/accounts/transfer")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.SC_OK)
                 .body("message", containsString("Transfer successful"))
-                .body("amount", is(1111.0f));
+                .body("amount", equalTo((float) transferAmount));
+
+        double kateActualBalance = getCurrentBalanceKateSecondAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should increase by " + transferAmount);
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should decrease by " + transferAmount);
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода с авторизацией на своем аккаунте, но трансфере с чужого аккаунта")
     public void userCannotTransferMoneyFromAnotherUsersAccountTest() {
+        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
+        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -241,11 +364,28 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_FORBIDDEN)
                 .body(equalTo("Unauthorized access to account"));
+
+        double kateActualBalance = getCurrentBalanceKateSecondAccount();
+        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not change");
+
+        Assertions.assertEquals(
+                alexExpectedBalance,
+                alexActualBalance,
+                0.01,
+                "Alex's balance should not change");
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода со своего аккаунта на тот же аккаунт")
     public void userCannotTransferMoneyToSameAccountTest() {
+        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
+
         given()
                 .log().all()
                 .contentType(ContentType.JSON)
@@ -263,5 +403,13 @@ public class TransactionOperationsTest extends BaseTest {
                 .log().all()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+
+        double kateActualBalance = getCurrentBalanceKateSecondAccount();
+
+        Assertions.assertEquals(
+                kateExpectedBalance,
+                kateActualBalance,
+                0.01,
+                "Kate's balance should not decrease");
     }
 }
