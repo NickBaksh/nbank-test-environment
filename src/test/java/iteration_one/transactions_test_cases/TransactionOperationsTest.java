@@ -4,6 +4,7 @@ import iteration_one.BaseTest;
 import models.Account;
 import models.DepositRequest;
 import models.TransferRequest;
+import models.TransferResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,8 @@ import specs.RequestSpecs;
 import specs.ResponseSpecs;
 
 import static org.hamcrest.Matchers.equalTo;
+import static specs.RequestSpecs.*;
+import static specs.ResponseSpecs.*;
 
 
 public class TransactionOperationsTest extends BaseTest {
@@ -28,7 +31,7 @@ public class TransactionOperationsTest extends BaseTest {
         for (int i = 0; i < 4; i++) {
             DepositRequest request = DepositRequest.builder()
                     .id(kateAccountId)
-                    .balance(5000.00)
+                    .balance(BALANCE_5000)
                     .build();
 
             new DepositRequester(
@@ -42,7 +45,7 @@ public class TransactionOperationsTest extends BaseTest {
 
         DepositRequest request = DepositRequest.builder()
                 .id(alexAccountId)
-                .balance(5000.00)
+                .balance(BALANCE_5000)
                 .build();
 
         new DepositRequester(
@@ -65,11 +68,11 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance() - transferSum;
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 1;
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance() + transferSum;
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size() + 1;
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
@@ -77,36 +80,42 @@ public class TransactionOperationsTest extends BaseTest {
                 .amount(transferSum)
                 .build();
 
-        new TransferRequester(
+        TransferResponse response = new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.requestReturnsOK())
                 .post(request)
-                .body("message", equalTo("Transfer successful"));
+                .extract()
+                .as(TransferResponse.class);
+
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(transferSum);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(alexAccountId);
 
         Account accountKateAfter = getFirstKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should decrease by " + transferSum)
-                .isEqualTo(kateBalanceBefore - transferSum);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(kateTransactionsCountBefore + 1);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should increase by " + transferSum)
-                .isEqualTo(alexBalanceBefore + transferSum);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(alexTransactionsCountBefore + 1);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
 
@@ -123,11 +132,11 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
@@ -139,32 +148,32 @@ public class TransactionOperationsTest extends BaseTest {
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.returnsBadRequest())
                 .post(request)
-                .body(equalTo("Transfer amount must be at least 0.01"));
+                .body(equalTo(TRANSFER_AMOUNT_MIN_ERROR));
 
         Account accountKateAfter = getFirstKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(alexBalanceBefore);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(alexTransactionsCountBefore);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
 
@@ -177,48 +186,48 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
                 .receiverAccountId(alexAccountId)
-                .amount(10000.01)
+                .amount(TRANSACTION_10000_0_1)
                 .build();
 
         new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.returnsBadRequest())
                 .post(request)
-                .body(equalTo("Transfer amount cannot exceed 10000"));
+                .body(equalTo(TRANSFER_AMOUNT_MAX_ERROR));
 
         Account accountKateAfter = getFirstKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(alexBalanceBefore);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(alexTransactionsCountBefore);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
@@ -230,48 +239,48 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
                 .receiverAccountId(alexAccountId)
-                .amount(10000.00)
+                .amount(TRANSACTION_10000)
                 .build();
 
         new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.returnsBadRequest())
                 .post(request)
-                .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
 
         Account accountKateAfter = getSecondKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(alexBalanceBefore);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(alexTransactionsCountBefore);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
@@ -283,48 +292,54 @@ public class TransactionOperationsTest extends BaseTest {
         Account secondKateAccountBefore = getSecondKateAccount();
         int kateSecondAccountId = secondKateAccountBefore.getId();
 
-        double kateFirstAccountBalanceBefore = firstKateAccountBefore.getBalance();
-        int kateFirstAccountTransactionsCountBefore = firstKateAccountBefore.getTransactions().size();
+        double kateFirstAccountBalanceExpected = firstKateAccountBefore.getBalance() - TRANSACTION_100;
+        int kateFirstAccountTransactionsCountExpected = firstKateAccountBefore.getTransactions().size() + 1;
 
-        double kateSecondAccountBalanceBefore = secondKateAccountBefore.getBalance();
-        int kateSecondAccountTransactionsCountBefore = secondKateAccountBefore.getTransactions().size();
+        double kateSecondAccountBalanceExpected = secondKateAccountBefore.getBalance() + TRANSACTION_100;
+        int kateSecondAccountTransactionsCountExpected = secondKateAccountBefore.getTransactions().size() + 1;
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateFirstAccountId)
                 .receiverAccountId(kateSecondAccountId)
-                .amount(100.00)
+                .amount(TRANSACTION_100)
                 .build();
 
-        new TransferRequester(
+        TransferResponse response = new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.requestReturnsOK())
                 .post(request)
-                .body("message", equalTo("Transfer successful"));
+                .extract()
+                .as(TransferResponse.class);
 
         Account firstKateAccountAfter = getFirstKateAccount();
         Account secondKateAccountAfter = getSecondKateAccount();
 
-        double kateFirstAccountBalanceAfter = firstKateAccountAfter.getBalance();
-        int kateFirstAccountTransactionsCountAfter = firstKateAccountAfter.getTransactions().size();
+        double kateFirstAccountBalanceActual = firstKateAccountAfter.getBalance();
+        int kateFirstAccountTransactionsCountActual = firstKateAccountAfter.getTransactions().size();
 
-        double kateSecondAccountBalanceAfter = secondKateAccountAfter.getBalance();
-        int kateSecondAccountTransactionsCountAfter = secondKateAccountAfter.getTransactions().size();
+        double kateSecondAccountBalanceActual = secondKateAccountAfter.getBalance();
+        int kateSecondAccountTransactionsCountActual = secondKateAccountAfter.getTransactions().size();
 
-        softly.assertThat(kateFirstAccountBalanceAfter)
-                .as("Balance should decrease by " + 100.00)
-                .isEqualTo(kateFirstAccountBalanceBefore - 100.00);
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_100);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateFirstAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateSecondAccountId);
 
-        softly.assertThat(kateFirstAccountTransactionsCountAfter)
+        softly.assertThat(kateFirstAccountBalanceActual)
+                .as("Balance should decrease by " + TRANSACTION_100)
+                .isEqualTo(kateFirstAccountBalanceExpected);
+
+        softly.assertThat(kateFirstAccountTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(kateFirstAccountTransactionsCountBefore + 1);
+                .isEqualTo(kateFirstAccountTransactionsCountExpected);
 
-        softly.assertThat(kateSecondAccountBalanceAfter)
-                .as("Balance should increase by " + 100.00)
-                .isEqualTo(kateSecondAccountBalanceBefore + 100.00);
+        softly.assertThat(kateSecondAccountBalanceActual)
+                .as("Balance should increase by " + TRANSACTION_100)
+                .isEqualTo(kateSecondAccountBalanceExpected);
 
-        softly.assertThat(kateSecondAccountTransactionsCountAfter)
+        softly.assertThat(kateSecondAccountTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(kateSecondAccountTransactionsCountBefore + 1);
+                .isEqualTo(kateSecondAccountTransactionsCountExpected);
     }
 
     @Test
@@ -333,33 +348,33 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountKateBefore = getFirstKateAccount();
         int kateAccountId = accountKateBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
                 .receiverAccountId(NON_EXISTENT_ACCOUNT_ID)
-                .amount(100.00)
+                .amount(TRANSACTION_100)
                 .build();
 
         new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.returnsBadRequest())
                 .post(request)
-                .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
 
         Account accountKateAfter = getFirstKateAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+                .isEqualTo(kateTransactionsCountExpected);
     }
 
     @Test
@@ -371,16 +386,16 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
                 .receiverAccountId(alexAccountId)
-                .amount(100.00)
+                .amount(TRANSACTION_100)
                 .build();
 
         new TransferRequester(
@@ -391,27 +406,27 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountKateAfter = getSecondKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should not decrease")
-                .isEqualTo(alexBalanceBefore);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should not increase")
-                .isEqualTo(alexTransactionsCountBefore);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
@@ -423,48 +438,54 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance() + TRANSACTION_1;
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 1;
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance() - TRANSACTION_1;
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size() + 1;
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(alexAccountId)
                 .receiverAccountId(kateAccountId)
-                .amount(1.00)
+                .amount(TRANSACTION_1)
                 .build();
 
-        new TransferRequester(
+        TransferResponse response = new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_ALEX)),
                 ResponseSpecs.requestReturnsOK())
                 .post(request)
-                .body("message", equalTo("Transfer successful"));
+                .extract()
+                .as(TransferResponse.class);
 
         Account accountKateAfter = getFirstKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_1);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(alexAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateAccountId);
+
+        softly.assertThat(kateBalanceActual)
                 .as("Balance should increase by 1")
-                .isEqualTo(kateBalanceBefore + 1.00);
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
+        softly.assertThat(kateTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(kateTransactionsCountBefore + 1);
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
+        softly.assertThat(alexBalanceActual)
                 .as("Balance should decrease by 1")
-                .isEqualTo(alexBalanceBefore - 1.00);
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
+        softly.assertThat(alexTransactionsCountActual)
                 .as("Transaction count should increase by 1")
-                .isEqualTo(alexTransactionsCountBefore + 1);
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
@@ -476,83 +497,91 @@ public class TransactionOperationsTest extends BaseTest {
         Account accountAlexBefore = getFirstAlexAccount();
         int alexAccountId = accountAlexBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double alexBalanceBefore = accountAlexBefore.getBalance();
-        int alexTransactionsCountBefore = accountAlexBefore.getTransactions().size();
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(alexAccountId)
                 .receiverAccountId(kateAccountId)
-                .amount(100.00)
+                .amount(TRANSACTION_100)
                 .build();
 
         new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.returnsForbidden())
                 .post(request)
-                .body(equalTo("Unauthorized access to account"));
+                .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
 
         Account accountKateAfter = getFirstKateAccount();
         Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        double alexBalanceAfter = accountAlexAfter.getBalance();
-        int alexTransactionsCountAfter = accountAlexAfter.getTransactions().size();
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
-                .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+        softly.assertThat(kateBalanceActual)
+                .as("Kate balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
 
-        softly.assertThat(kateTransactionsCountAfter)
-                .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore);
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Kate transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
 
-        softly.assertThat(alexBalanceAfter)
-                .as("Balance should not decrease")
-                .isEqualTo(alexBalanceBefore);
+        softly.assertThat(alexBalanceActual)
+                .as("Alex balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
 
-        softly.assertThat(alexTransactionsCountAfter)
-                .as("Transaction count should not increase")
-                .isEqualTo(alexTransactionsCountBefore);
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Alex transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
+    // По-моему в более ранних версиях n-bank этот кейс выдавал ошибку
+    // Сейчас можно совершить перевод на тот же аккаунт, транзакции сохранятся в истории
     @Test
-    @DisplayName("Проверка невозможности перевода со своего аккаунта на тот же аккаунт")
+    @DisplayName("Проверка перевода со своего аккаунта на тот же аккаунт " +
+            "(баланс не меняется, но транзакции создаются)")
     public void userCannotTransferMoneyToSameAccountTest() {
         Account accountKateBefore = getFirstKateAccount();
         int kateAccountId = accountKateBefore.getId();
 
-        double kateBalanceBefore = accountKateBefore.getBalance();
-        int kateTransactionsCountBefore = accountKateBefore.getTransactions().size();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 2;
 
         TransferRequest request = TransferRequest.builder()
                 .senderAccountId(kateAccountId)
                 .receiverAccountId(kateAccountId)
-                .amount(100.00)
+                .amount(TRANSACTION_100)
                 .build();
 
-        new TransferRequester(
+        TransferResponse response = new TransferRequester(
                 RequestSpecs.authWithTokenSpec(token(USER_KATE)),
                 ResponseSpecs.requestReturnsOK())
                 .post(request)
-                .body("message", equalTo("Transfer successful"));
+                .extract()
+                .as(TransferResponse.class);
 
         Account accountKateAfter = getFirstKateAccount();
-        Account accountAlexAfter = getFirstAlexAccount();
 
-        double kateBalanceAfter = accountKateAfter.getBalance();
-        int kateTransactionsCountAfter = accountKateAfter.getTransactions().size();
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
 
-        softly.assertThat(kateBalanceAfter)
-                .as("Balance should not decrease")
-                .isEqualTo(kateBalanceBefore);
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_100);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateAccountId);
 
-        softly.assertThat(kateTransactionsCountAfter)
-                .as("Transaction count should not increase")
-                .isEqualTo(kateTransactionsCountBefore + 2);
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not change")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should increase by 2")
+                .isEqualTo(kateTransactionsCountExpected);
     }
 }

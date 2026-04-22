@@ -11,6 +11,15 @@ import requests.requesters.post.LoginUserRequester;
 import java.util.List;
 
 public class RequestSpecs {
+    public static final Double TRANSACTION_0_0_1 = 0.01;
+    public static final Double TRANSACTION_0 = 0.00;
+    public static final Double TRANSACTION_1 = 1.00;
+    public static final Double TRANSACTION_100 = 100.00;
+    public static final Double TRANSACTION_1000 = 1000.00;
+    public static final Double TRANSACTION_10000 = 10000.00;
+    public static final Double TRANSACTION_10000_0_1 = 10000.01;
+    public static final Double BALANCE_5000 = 5000.00;
+
     private RequestSpecs() {
     }
 
