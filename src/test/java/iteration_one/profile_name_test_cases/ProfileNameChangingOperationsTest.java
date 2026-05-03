@@ -1,15 +1,23 @@
 package iteration_one.profile_name_test_cases;
 
+import generators.RandomModelGenerator;
+import generators.TestUser;
+import generators.testdata.InvalidNameCase;
 import iteration_one.BaseTest;
-import models.Customer;
 import models.UpdateCustomerProfileRequest;
 import models.UpdateCustomerProfileResponse;
+import models.comparison.ModelAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import requests.requesters.put.UpdateCustomerProfileRequester;
+import org.junit.jupiter.params.provider.MethodSource;
+import requests.skelethon.Endpoint;
+import requests.skelethon.requesters.CrudRequester;
+import requests.skelethon.requesters.ValidatedCrudRequester;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.equalTo;
 import static specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
@@ -17,10 +25,21 @@ import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 
 public class ProfileNameChangingOperationsTest extends BaseTest {
 
+    // ========== Валидные данные (генерируются из аннотации на модели) ==========
+    static Stream<String> validProfileNames() {
+        return Stream.generate(() ->
+                RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
+        ).limit(1);
+    }
+
+    // ========== Невалидные данные (генерируются из InvalidNameCase) ==========
+    static Stream<String> invalidProfileNames() {
+        return Arrays.stream(InvalidNameCase.values())
+                .map(InvalidNameCase::generate);
+    }
+
     @ParameterizedTest
-    @CsvSource({
-            "Catherine Great"
-    })
+    @MethodSource("validProfileNames")
     @DisplayName("Пользователь может изменить имя профиля на имя из двух слов")
     public void userCanChangeProfileNameToTwoWordsTest(String profileName) {
         UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
@@ -28,78 +47,38 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 .name(profileName)
                 .build();
 
-        UpdateCustomerProfileResponse response = new UpdateCustomerProfileRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.requestReturnsOK())
-                .put(request)
-                .extract()
-                .as(UpdateCustomerProfileResponse.class);
+        UpdateCustomerProfileResponse response = new ValidatedCrudRequester<UpdateCustomerProfileResponse>(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.requestReturnsOK(),
+                Endpoint.CUSTOMER_PROFILE_UPDATE)
+                .update(request);
 
-        // Использую сериализацию для сравнения нового имени профиля с тем значением, которое передал в запросе
+        ModelAssertions.assertThatModels(request, response).match();
+
         // Сравниваю message с ожидаемым значением
         softly.assertThat(response.getMessage()).isEqualTo(PROFILE_UPDATE_SUCCESS);
-        softly.assertThat(response.getCustomer().getName()).isEqualTo(profileName);
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "Catherine The Great",
-            "Catherine",
-            "' '",
-            "''",
-            "Catherine12 Great",
-            "Catherine 12Great",
-            "Cath&rine Great",
-            "Catherine Gre@t",
-            "Catherine_Great"
-    })
+    @MethodSource("invalidProfileNames")
     @DisplayName("Пользователь не может изменить имя профиля, " +
             "если оно не соответствует формату 'Слово пробел Слово'")
     public void userCannotChangeProfileNameNotMatchingTwoWordsFormatTest(String profileName) {
-        String profileNameBefore = getCustomerProfileName(USER_KATE);
+        String profileNameBefore = getCustomerProfileName(TestUser.KATE.getKey());
 
         UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
                 .builder()
                 .name(profileName)
                 .build();
 
-        new UpdateCustomerProfileRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsBadRequest())
-                .put(request)
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.CUSTOMER_PROFILE_UPDATE)
+                .update(request)
                 .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
 
-        //Для негативных проверок запрашиваю через ГЕТ состояние профиля клиента после теста.
-        // Ответ с ошибкой 400 нет смысла сериализовать, т.к. при 400 ответе возвращается только
-        // текст ошибки не в json
-        String profileNameAfter = getCustomerProfileName(USER_KATE);
-
-        softly.assertThat(profileNameAfter)
-                .as("Profile name should not be updated")
-                .isEqualTo(profileNameBefore);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "Екатерина Великая"
-    })
-    @DisplayName("Пользователь не может использовать кириллицу в имени")
-    public void userCannotUseCyrillicLettersInNameTest(String profileName) {
-        String profileNameBefore = getCustomerProfileName(USER_KATE);
-
-        UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
-                .builder()
-                .name(profileName)
-                .build();
-
-        new UpdateCustomerProfileRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsBadRequest())
-                .put(request)
-                .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
-
-        String profileNameAfter = getCustomerProfileName(USER_KATE);
-
+        String profileNameAfter = getCustomerProfileName(TestUser.KATE.getKey());
         softly.assertThat(profileNameAfter)
                 .as("Profile name should not be updated")
                 .isEqualTo(profileNameBefore);

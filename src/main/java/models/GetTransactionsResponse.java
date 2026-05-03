@@ -5,12 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TransferRequest extends BaseModel {
-    private Long senderAccountId;
-    private Long receiverAccountId;
-    private Double amount;
+public class GetTransactionsResponse extends BaseModel {
+    private List<Transaction> transactions;
 }

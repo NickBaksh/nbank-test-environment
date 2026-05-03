@@ -1,9 +1,11 @@
 package iteration_one.test_preconditions;
 
+import generators.TestUser;
 import iteration_one.BaseTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import requests.requesters.get.GetAllUsersRequester;
+import requests.skelethon.Endpoint;
+import requests.skelethon.requesters.CrudRequester;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
 
@@ -16,12 +18,12 @@ public class LoginUserTest extends BaseTest {
             "а также их счета. Два счёта у Кейт и один у Алекса")
     public void userProfilesAndAccountsWasCreatedTest() {
 
-        new GetAllUsersRequester(
+        new CrudRequester(
                 RequestSpecs.adminSpec(),
-                ResponseSpecs.requestReturnsOK())
-                .get()
-                .body("find { it.username.startsWith('Kate_') && it.accounts.size() == 2 }", notNullValue())
-                .body("find { it.username.startsWith('Alex_') && it.accounts.size() == 1 }", notNullValue());
-
+                ResponseSpecs.requestReturnsOK(),
+                Endpoint.ADMIN_USERS_GET)
+                .read()
+                .body("find { it.username.startsWith('" + TestUser.KATE.getPrefix() + "') && it.accounts.size() == 2 }", notNullValue())
+                .body("find { it.username.startsWith('" + TestUser.ALEX.getPrefix() + "') && it.accounts.size() == 1 }", notNullValue());
     }
 }
