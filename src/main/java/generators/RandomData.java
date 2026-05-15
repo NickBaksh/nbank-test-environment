@@ -2,6 +2,7 @@ package generators;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+// Сейчас не используется, т.к. перешел на генерацию через regex в модели
 public class RandomData {
     private RandomData() {}
 

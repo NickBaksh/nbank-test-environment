@@ -1,33 +1,46 @@
 package iteration_one.deposit_test_cases;
 
+import generators.RandomModelGenerator;
+import generators.TestUser;
 import iteration_one.BaseTest;
 import models.Account;
 import models.DepositRequest;
+import models.DepositResponse;
+import models.comparison.ModelAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import requests.requesters.post.DepositRequester;
+import org.junit.jupiter.params.provider.MethodSource;
+import requests.skelethon.Endpoint;
+import requests.skelethon.requesters.CrudRequester;
+import requests.skelethon.requesters.ValidatedCrudRequester;
 import specs.RequestSpecs;
 import specs.ResponseSpecs;
+
+import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.equalTo;
 import static specs.ResponseSpecs.*;
 
 public class DepositOperationsTest extends BaseTest {
 
+    static Stream<InvalidDepositCase> invalidDepositCases() {
+        return Stream.of(
+                new InvalidDepositCase(-0.01, DEPOSIT_AMOUNT_MIN_ERROR),
+                new InvalidDepositCase(0, DEPOSIT_AMOUNT_MIN_ERROR),
+                new InvalidDepositCase(5000.01, DEPOSIT_AMOUNT_MAX_ERROR)
+        );
+    }
 
-    //Был вариант вынести текст сообщения в @CsvSource, но тогда не получится использовать константу.
-    //Поэтому вернул разделение на 2 теста
+    static Stream<Double> validDepositAmounts() {
+        return Stream.of(0.01, 4999.99, 5000.0);
+    }
+
+
     @ParameterizedTest
-    @CsvSource(
-            {
-                    "-0.01",
-                    "0"
-            }
-    )
+    @MethodSource("invalidDepositCases")
     @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
-    public void userCanNotDepositInvalidSumTest(double deposit) {
+    public void userCanNotDepositInvalidSumTest(InvalidDepositCase testCase) {
 
         // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
         // проверяю состояние до запуска теста
@@ -36,15 +49,16 @@ public class DepositOperationsTest extends BaseTest {
 
         // Пробую положить на аккаунт невалидную сумму
         DepositRequest request = DepositRequest.builder()
-                .id(firstAccountId(USER_KATE))
-                .balance(deposit)
+                .id(firstAccountId(TestUser.KATE.getKey()))
+                .balance(testCase.amount)
                 .build();
 
-        new DepositRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsBadRequest())
-                .post(request)
-                .body(equalTo(DEPOSIT_AMOUNT_MIN_ERROR));
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request)
+                .body(equalTo(testCase.expectedError));
 
         // проверяю состояние после запуска теста
         double balanceActual = getKateFirstAccountBalance();
@@ -59,49 +73,12 @@ public class DepositOperationsTest extends BaseTest {
                 .isEqualTo(transactionsCountExpected);
     }
 
-    // Оставил отдельный тест для кейса с превышением максимальной суммы, заменил хардкод на константу
-    @Test
-    @DisplayName("Проверка невозможности разместить сумму больше 5000 на счёте. 0 < депозит <= 5000")
-    public void userCanNotDepositSumAbove5000Test() {
-        double balanceExpected = getKateFirstAccountBalance();
-        int transactionsCountExpected = getKateFirstAccountTransactionsCount();
-
-        DepositRequest request = DepositRequest.builder()
-                .id(firstAccountId(USER_KATE))
-                .balance(5000.01)
-                .build();
-
-        new DepositRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsBadRequest())
-                .post(request)
-                .body(equalTo(DEPOSIT_AMOUNT_MAX_ERROR));
-
-        double balanceActual = getKateFirstAccountBalance();
-        int transactionsCountActual = getKateFirstAccountTransactionsCount();
-
-        softly.assertThat(balanceActual)
-                .as("Account balance should not change")
-                .isEqualTo(balanceExpected);
-
-        softly.assertThat(transactionsCountActual)
-                .as("Account transactions count should not change")
-                .isEqualTo(transactionsCountExpected);
-    }
-
-
     @ParameterizedTest
-    @CsvSource(
-            {
-                    "0.01",
-                    "4999.99",
-                    "5000"
-            }
-    )
+    @MethodSource("validDepositAmounts")
     @DisplayName("Проверка размещения на депозите валидных сумм. 0 < депозит <= 5000")
     public void userCanDepositValidSumTest(double deposit) {
         Account accountBefore = getFirstKateAccount();
-        int accountId = accountBefore.getId();
+        long accountId = accountBefore.getId();
 
         double balanceExpected = accountBefore.getBalance() + deposit;
         int transactionsCountExpected = accountBefore.getTransactions().size() + 1;
@@ -111,12 +88,14 @@ public class DepositOperationsTest extends BaseTest {
                 .balance(deposit)
                 .build();
 
-        Account response = new DepositRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.requestReturnsOK())
-                .post(request)
-                .extract()
-                .as(Account.class);
+        DepositResponse response = new ValidatedCrudRequester<DepositResponse>(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.requestReturnsOK(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request);
+
+        // Сравниваю через ModelAssertion модели запроса и ответа
+        ModelAssertions.assertThatModels(request, response).match();
 
         Double balanceActual = response.getBalance();
         int transactionCountActual = response.getTransactions().size();
@@ -139,15 +118,14 @@ public class DepositOperationsTest extends BaseTest {
         double alexBalanceExpected = getAlexFirstAccountBalance();
         int alexTransactionsCountExpected = getAlexFirstAccountTransactionsCount();
 
-        DepositRequest request = DepositRequest.builder()
-                .id(firstAccountId(USER_ALEX))
-                .balance(1)
-                .build();
+        DepositRequest request = RandomModelGenerator.generateWithBuilder(DepositRequest.class);
+        request.setId(firstAccountId(TestUser.ALEX.getKey()));
 
-        new DepositRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsForbidden())
-                .post(request)
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.returnsForbidden(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request)
                 .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
 
         double kateBalanceActual = getKateFirstAccountBalance();
@@ -180,15 +158,14 @@ public class DepositOperationsTest extends BaseTest {
         double kateBalanceExpected = getKateFirstAccountBalance();
         int kateTransactionsCountExpected = getKateFirstAccountTransactionsCount();
 
-        DepositRequest request = DepositRequest.builder()
-                .id(NON_EXISTENT_ACCOUNT_ID)
-                .balance(1)
-                .build();
+        DepositRequest request = RandomModelGenerator.generateWithBuilder(DepositRequest.class);
+        request.setId(NON_EXISTENT_ACCOUNT_ID);
 
-        new DepositRequester(
-                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
-                ResponseSpecs.returnsForbidden())
-                .post(request)
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(getKateToken()),
+                ResponseSpecs.returnsForbidden(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request)
                 .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
 
         double kateBalanceActual = getKateFirstAccountBalance();
@@ -201,5 +178,9 @@ public class DepositOperationsTest extends BaseTest {
         softly.assertThat(kateTransactionsCountActual)
                 .as("Account transactions count should not change")
                 .isEqualTo(kateTransactionsCountExpected);
+    }
+
+    // Подготавливаю тестовые данные
+    public record InvalidDepositCase(double amount, String expectedError) {
     }
 }
