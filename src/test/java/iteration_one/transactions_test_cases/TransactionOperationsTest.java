@@ -1,56 +1,57 @@
 package iteration_one.transactions_test_cases;
 
-import io.restassured.http.ContentType;
 import iteration_one.BaseTest;
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Assertions;
+import models.Account;
+import models.DepositRequest;
+import models.TransferRequest;
+import models.TransferResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import requests.requesters.post.DepositRequester;
+import requests.requesters.post.TransferRequester;
+import specs.RequestSpecs;
+import specs.ResponseSpecs;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static specs.RequestSpecs.*;
+import static specs.ResponseSpecs.*;
+
 
 public class TransactionOperationsTest extends BaseTest {
     @BeforeEach
     public void setUpBalance() {
+        Account accountKate = getFirstKateAccount();
+        int kateAccountId = accountKate.getId();
 
-        int i = 0;
         //Пополняем счёт Кейт на 20000 перед каждым тестом перевода
         //Вызов несколько раз, т.к. есть ограничение на пополнение в 5000
-        while (i < 4) {
-            i += 1;
-            given()
-                    .contentType(ContentType.JSON)
-                    .accept(ContentType.JSON)
-                    .header("Authorization", KATE_AUTH_TOKEN)
-                    .body("""
-                         {
-                          "id": %s,
-                          "balance": 5000
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST))
-                    .post("/api/v1/accounts/deposit")
-                    .then()
-                    .statusCode(HttpStatus.SC_OK);
+        for (int i = 0; i < 4; i++) {
+            DepositRequest request = DepositRequest.builder()
+                    .id(kateAccountId)
+                    .balance(BALANCE_5000)
+                    .build();
+
+            new DepositRequester(
+                    RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                    ResponseSpecs.requestReturnsOK())
+                    .post(request);
         }
 
-        given()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", ALEX_AUTH_TOKEN)
-                .body("""
-                         {
-                          "id": %s,
-                          "balance": 5000
-                        }
-                        """.formatted(ALEX_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .statusCode(HttpStatus.SC_OK);
+        Account accountAlex = getFirstAlexAccount();
+        int alexAccountId = accountAlex.getId();
+
+        DepositRequest request = DepositRequest.builder()
+                .id(alexAccountId)
+                .balance(BALANCE_5000)
+                .build();
+
+        new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_ALEX)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request);
     }
 
     @ParameterizedTest
@@ -61,355 +62,526 @@ public class TransactionOperationsTest extends BaseTest {
     })
     @DisplayName("Проверка отправки валидной суммы на аккаунт другого человека")
     public void userCanTransferMoneyToAnotherAccountTest(double transferSum) {
-        double kateBalanceBefore = getCurrentBalanceKateFirstAccount();
-        double kateExpectedBalance = kateBalanceBefore - transferSum;
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        double alexBalanceBefore = getCurrentBalanceAlexFirstAccount();
-        double alexExpectedBalance = alexBalanceBefore + transferSum;
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": %s
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, ALEX_ACCOUNT_ID_FIRST, transferSum))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_OK)
-                .body("message", containsString("Transfer successful"))
-                .body("amount", equalTo((float) transferSum));
+        double kateBalanceExpected = accountKateBefore.getBalance() - transferSum;
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 1;
 
-        double kateActualBalance = getCurrentBalanceKateFirstAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double alexBalanceExpected = accountAlexBefore.getBalance() + transferSum;
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size() + 1;
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should be decreased by " + transferSum);
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(alexAccountId)
+                .amount(transferSum)
+                .build();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should be increased by " + transferSum);
+        TransferResponse response = new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request)
+                .extract()
+                .as(TransferResponse.class);
+
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(transferSum);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(alexAccountId);
+
+        Account accountKateAfter = getFirstKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should decrease by " + transferSum)
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should increase by " + transferSum)
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(alexTransactionsCountExpected);
     }
+
 
     @ParameterizedTest
     @CsvSource({
-            "-0.01, Transfer amount must be at least 0.01",
-            "0, Transfer amount must be at least 0.01",
-            "10000.01, Transfer amount cannot exceed 10000"
+            "-0.01",
+            "0"
     })
     @DisplayName("Проверка невозможности отправки невалидной суммы на аккаунт другого человека")
-    public void userCannotTransferInvalidSumToAnotherAccountTest(double transferSum, String expectedResponse) {
-        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
-        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+    public void userCannotTransferInvalidSumToAnotherAccountTest(double transferSum) {
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": %s
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, ALEX_ACCOUNT_ID_FIRST, transferSum))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo(expectedResponse));
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        double kateActualBalance = getCurrentBalanceKateFirstAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not decrease");
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should not increase");
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(alexAccountId)
+                .amount(transferSum)
+                .build();
+
+        new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(TRANSFER_AMOUNT_MIN_ERROR));
+
+        Account accountKateAfter = getFirstKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
+    }
+
+
+    @Test
+    @DisplayName("Проверка невозможности отправки суммы больше 10000")
+    public void userCannotTransferMoreMoneyThan10000Test() {
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
+
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
+
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
+
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
+
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(alexAccountId)
+                .amount(TRANSACTION_10000_0_1)
+                .build();
+
+        new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(TRANSFER_AMOUNT_MAX_ERROR));
+
+        Account accountKateAfter = getFirstKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности отправки суммы больше чем есть на счёте")
     public void userCannotTransferMoreMoneyThanHaveTest() {
-        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
-        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+        Account accountKateBefore = getSecondKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 10000
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_SECOND, ALEX_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        double kateActualBalance = getCurrentBalanceKateSecondAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not change");
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should not change");
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(alexAccountId)
+                .amount(TRANSACTION_10000)
+                .build();
+
+        new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
+
+        Account accountKateAfter = getSecondKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка перевода между своими счетами")
     public void userCanTransferMoneyBetweenAccountsTest() {
-        double kateFirstAccountExpectedBalance = getCurrentBalanceKateFirstAccount() - 1;
-        double kateSecondAccountExpectedBalance = getCurrentBalanceKateSecondAccount() + 1;
+        Account firstKateAccountBefore = getFirstKateAccount();
+        int kateFirstAccountId = firstKateAccountBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 1
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, KATE_ACCOUNT_ID_SECOND))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_OK)
-                .body("message", containsString("Transfer successful"))
-                .body("amount", equalTo((float) 1.0));
+        Account secondKateAccountBefore = getSecondKateAccount();
+        int kateSecondAccountId = secondKateAccountBefore.getId();
 
-        double kateFirstAccountActualBalance = getCurrentBalanceKateFirstAccount();
-        double kateSecondAccountActualBalance = getCurrentBalanceKateSecondAccount();
+        double kateFirstAccountBalanceExpected = firstKateAccountBefore.getBalance() - TRANSACTION_100;
+        int kateFirstAccountTransactionsCountExpected = firstKateAccountBefore.getTransactions().size() + 1;
 
-        Assertions.assertEquals(
-                kateFirstAccountExpectedBalance,
-                kateFirstAccountActualBalance,
-                0.01,
-                "Kate's first account balance should decrease by 1");
+        double kateSecondAccountBalanceExpected = secondKateAccountBefore.getBalance() + TRANSACTION_100;
+        int kateSecondAccountTransactionsCountExpected = secondKateAccountBefore.getTransactions().size() + 1;
 
-        Assertions.assertEquals(
-                kateSecondAccountExpectedBalance,
-                kateSecondAccountActualBalance,
-                0.01,
-                "Kate's second account balance should increase by 1");
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateFirstAccountId)
+                .receiverAccountId(kateSecondAccountId)
+                .amount(TRANSACTION_100)
+                .build();
+
+        TransferResponse response = new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request)
+                .extract()
+                .as(TransferResponse.class);
+
+        Account firstKateAccountAfter = getFirstKateAccount();
+        Account secondKateAccountAfter = getSecondKateAccount();
+
+        double kateFirstAccountBalanceActual = firstKateAccountAfter.getBalance();
+        int kateFirstAccountTransactionsCountActual = firstKateAccountAfter.getTransactions().size();
+
+        double kateSecondAccountBalanceActual = secondKateAccountAfter.getBalance();
+        int kateSecondAccountTransactionsCountActual = secondKateAccountAfter.getTransactions().size();
+
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_100);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateFirstAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateSecondAccountId);
+
+        softly.assertThat(kateFirstAccountBalanceActual)
+                .as("Balance should decrease by " + TRANSACTION_100)
+                .isEqualTo(kateFirstAccountBalanceExpected);
+
+        softly.assertThat(kateFirstAccountTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(kateFirstAccountTransactionsCountExpected);
+
+        softly.assertThat(kateSecondAccountBalanceActual)
+                .as("Balance should increase by " + TRANSACTION_100)
+                .isEqualTo(kateSecondAccountBalanceExpected);
+
+        softly.assertThat(kateSecondAccountTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(kateSecondAccountTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода на несуществующий счёт")
     public void userCannotTransferMoneyToNonExistentAccountTest() {
-        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": 9999,
-                          "amount": 1
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        double kateActualBalance = getCurrentBalanceKateFirstAccount();
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(NON_EXISTENT_ACCOUNT_ID)
+                .amount(TRANSACTION_100)
+                .build();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not change");
+        new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
+
+        Account accountKateAfter = getFirstKateAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода без авторизации")
     public void userCannotTransferMoneyWithoutAuthorizationTest() {
-        double kateExpectedBalance = getCurrentBalanceKateFirstAccount();
-        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+        Account accountKateBefore = getSecondKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 1
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, ALEX_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_UNAUTHORIZED);
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        double kateActualBalance = getCurrentBalanceKateFirstAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not change");
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should not change");
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(alexAccountId)
+                .amount(TRANSACTION_100)
+                .build();
+
+        new TransferRequester(
+                RequestSpecs.unauthSpec(),
+                ResponseSpecs.returnsUnauthorize())
+                .post(request);
+
+        Account accountKateAfter = getSecondKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка перевода от одного клиента другому. Возврат от Алекса к Кейт")
     public void userCanTransferMoneyToSenderTest() {
-        double transferAmount = 1111;
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        double kateExpectedBalance = getCurrentBalanceKateSecondAccount() + transferAmount;
-        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount() - transferAmount;
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", ALEX_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": %s
-                        }
-                        """.formatted(ALEX_ACCOUNT_ID_FIRST, KATE_ACCOUNT_ID_SECOND, transferAmount))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_OK)
-                .body("message", containsString("Transfer successful"))
-                .body("amount", equalTo((float) transferAmount));
+        double kateBalanceExpected = accountKateBefore.getBalance() + TRANSACTION_1;
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 1;
 
-        double kateActualBalance = getCurrentBalanceKateSecondAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double alexBalanceExpected = accountAlexBefore.getBalance() - TRANSACTION_1;
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size() + 1;
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should increase by " + transferAmount);
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(alexAccountId)
+                .receiverAccountId(kateAccountId)
+                .amount(TRANSACTION_1)
+                .build();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should decrease by " + transferAmount);
+        TransferResponse response = new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_ALEX)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request)
+                .extract()
+                .as(TransferResponse.class);
+
+        Account accountKateAfter = getFirstKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_1);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(alexAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateAccountId);
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should increase by 1")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Balance should decrease by 1")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности перевода с авторизацией на своем аккаунте, но трансфере с чужого аккаунта")
     public void userCannotTransferMoneyFromAnotherUsersAccountTest() {
-        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
-        double alexExpectedBalance = getCurrentBalanceAlexFirstAccount();
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 1
-                        }
-                        """.formatted(ALEX_ACCOUNT_ID_FIRST, KATE_ACCOUNT_ID_SECOND))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_FORBIDDEN)
-                .body(equalTo("Unauthorized access to account"));
+        Account accountAlexBefore = getFirstAlexAccount();
+        int alexAccountId = accountAlexBefore.getId();
 
-        double kateActualBalance = getCurrentBalanceKateSecondAccount();
-        double alexActualBalance = getCurrentBalanceAlexFirstAccount();
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not change");
+        double alexBalanceExpected = accountAlexBefore.getBalance();
+        int alexTransactionsCountExpected = accountAlexBefore.getTransactions().size();
 
-        Assertions.assertEquals(
-                alexExpectedBalance,
-                alexActualBalance,
-                0.01,
-                "Alex's balance should not change");
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(alexAccountId)
+                .receiverAccountId(kateAccountId)
+                .amount(TRANSACTION_100)
+                .build();
+
+        new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsForbidden())
+                .post(request)
+                .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
+
+        Account accountKateAfter = getFirstKateAccount();
+        Account accountAlexAfter = getFirstAlexAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        double alexBalanceActual = accountAlexAfter.getBalance();
+        int alexTransactionsCountActual = accountAlexAfter.getTransactions().size();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Kate balance should not decrease")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Kate transaction count should not increase")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Alex balance should not decrease")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Alex transaction count should not increase")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
+    // По-моему в более ранних версиях n-bank этот кейс выдавал ошибку
+    // Сейчас можно совершить перевод на тот же аккаунт, транзакции сохранятся в истории
     @Test
-    @DisplayName("Проверка невозможности перевода со своего аккаунта на тот же аккаунт")
+    @DisplayName("Проверка перевода со своего аккаунта на тот же аккаунт " +
+            "(баланс не меняется, но транзакции создаются)")
     public void userCannotTransferMoneyToSameAccountTest() {
-        double kateExpectedBalance = getCurrentBalanceKateSecondAccount();
+        Account accountKateBefore = getFirstKateAccount();
+        int kateAccountId = accountKateBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "senderAccountId": %s,
-                          "receiverAccountId": %s,
-                          "amount": 1
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_SECOND, KATE_ACCOUNT_ID_SECOND))
-                .post("/api/v1/accounts/transfer")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Invalid transfer: insufficient funds or invalid accounts"));
+        double kateBalanceExpected = accountKateBefore.getBalance();
+        int kateTransactionsCountExpected = accountKateBefore.getTransactions().size() + 2;
 
-        double kateActualBalance = getCurrentBalanceKateSecondAccount();
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(kateAccountId)
+                .receiverAccountId(kateAccountId)
+                .amount(TRANSACTION_100)
+                .build();
 
-        Assertions.assertEquals(
-                kateExpectedBalance,
-                kateActualBalance,
-                0.01,
-                "Kate's balance should not decrease");
+        TransferResponse response = new TransferRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request)
+                .extract()
+                .as(TransferResponse.class);
+
+        Account accountKateAfter = getFirstKateAccount();
+
+        double kateBalanceActual = accountKateAfter.getBalance();
+        int kateTransactionsCountActual = accountKateAfter.getTransactions().size();
+
+        softly.assertThat(response.getMessage()).isEqualTo(TRANSFER_SUCCESS);
+        softly.assertThat(response.getAmount()).isEqualTo(TRANSACTION_100);
+        softly.assertThat(response.getSenderAccountId()).isEqualTo(kateAccountId);
+        softly.assertThat(response.getReceiverAccountId()).isEqualTo(kateAccountId);
+
+        softly.assertThat(kateBalanceActual)
+                .as("Balance should not change")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Transaction count should increase by 2")
+                .isEqualTo(kateTransactionsCountExpected);
     }
 }

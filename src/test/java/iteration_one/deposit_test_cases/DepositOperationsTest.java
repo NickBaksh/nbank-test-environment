@@ -1,183 +1,205 @@
 package iteration_one.deposit_test_cases;
 
-import io.restassured.http.ContentType;
 import iteration_one.BaseTest;
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.Assertions;
+import models.Account;
+import models.DepositRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import requests.requesters.post.DepositRequester;
+import specs.RequestSpecs;
+import specs.ResponseSpecs;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static specs.ResponseSpecs.*;
 
 public class DepositOperationsTest extends BaseTest {
 
+
+    //Был вариант вынести текст сообщения в @CsvSource, но тогда не получится использовать константу.
+    //Поэтому вернул разделение на 2 теста
     @ParameterizedTest
     @CsvSource(
             {
-                    "-0.01, 400",
-                    "0, 400"
+                    "-0.01",
+                    "0"
             }
     )
     @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
-    public void userCanNotDepositInvalidSumTest(double deposit, int expectedStatusCode) {
-        double balanceBefore = getCurrentBalanceKateFirstAccount();
+    public void userCanNotDepositInvalidSumTest(double deposit) {
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "id": %s,
-                          "balance": %s
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, deposit))
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .log().all()
-                .statusCode(expectedStatusCode)
-                .body(equalTo("Deposit amount must be at least 0.01"));
+        // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
+        // проверяю состояние до запуска теста
+        double balanceExpected = getKateFirstAccountBalance();
+        int transactionsCountExpected = getKateFirstAccountTransactionsCount();
 
-        double balanceAfter = getCurrentBalanceKateFirstAccount();
+        // Пробую положить на аккаунт невалидную сумму
+        DepositRequest request = DepositRequest.builder()
+                .id(firstAccountId(USER_KATE))
+                .balance(deposit)
+                .build();
 
-        Assertions.assertEquals(
-                balanceBefore,
-                balanceAfter,
-                0.01,
-                "Balance should not change");
+        new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(DEPOSIT_AMOUNT_MIN_ERROR));
+
+        // проверяю состояние после запуска теста
+        double balanceActual = getKateFirstAccountBalance();
+        int transactionsCountActual = getKateFirstAccountTransactionsCount();
+
+        softly.assertThat(balanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(balanceExpected);
+
+        softly.assertThat(transactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(transactionsCountExpected);
     }
 
+    // Оставил отдельный тест для кейса с превышением максимальной суммы, заменил хардкод на константу
     @Test
     @DisplayName("Проверка невозможности разместить сумму больше 5000 на счёте. 0 < депозит <= 5000")
     public void userCanNotDepositSumAbove5000Test() {
-        double balanceBefore = getCurrentBalanceKateFirstAccount();
+        double balanceExpected = getKateFirstAccountBalance();
+        int transactionsCountExpected = getKateFirstAccountTransactionsCount();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "id": %s,
-                          "balance": 5000.01
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.SC_BAD_REQUEST)
-                .body(equalTo("Deposit amount cannot exceed 5000"));
+        DepositRequest request = DepositRequest.builder()
+                .id(firstAccountId(USER_KATE))
+                .balance(5000.01)
+                .build();
 
-        double balanceAfter = getCurrentBalanceKateFirstAccount();
-        Assertions.assertEquals(
-                balanceBefore,
-                balanceAfter,
-                0.01,
-                "Balance should not change");
+        new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsBadRequest())
+                .post(request)
+                .body(equalTo(DEPOSIT_AMOUNT_MAX_ERROR));
+
+        double balanceActual = getKateFirstAccountBalance();
+        int transactionsCountActual = getKateFirstAccountTransactionsCount();
+
+        softly.assertThat(balanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(balanceExpected);
+
+        softly.assertThat(transactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(transactionsCountExpected);
     }
+
 
     @ParameterizedTest
     @CsvSource(
             {
-                    "0.01, 200",
-                    "4999.99, 200",
-                    "5000, 200"
+                    "0.01",
+                    "4999.99",
+                    "5000"
             }
     )
     @DisplayName("Проверка размещения на депозите валидных сумм. 0 < депозит <= 5000")
-    public void userCanDepositValidSumTest(double deposit, int expectedStatusCode) {
-        double balanceBefore = getCurrentBalanceKateFirstAccount();
-        double expectedBalance = balanceBefore + deposit;
+    public void userCanDepositValidSumTest(double deposit) {
+        Account accountBefore = getFirstKateAccount();
+        int accountId = accountBefore.getId();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "id": %s,
-                          "balance": %s
-                        }
-                        """.formatted(KATE_ACCOUNT_ID_FIRST, deposit))
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .log().all()
-                .statusCode(expectedStatusCode);
+        double balanceExpected = accountBefore.getBalance() + deposit;
+        int transactionsCountExpected = accountBefore.getTransactions().size() + 1;
 
-        double balanceAfter = getCurrentBalanceKateFirstAccount();
+        DepositRequest request = DepositRequest.builder()
+                .id(accountId)
+                .balance(deposit)
+                .build();
 
-        Assertions.assertEquals(
-                expectedBalance,
-                balanceAfter,
-                0.01,
-                "Balance should increase by " + deposit);
+        Account response = new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.requestReturnsOK())
+                .post(request)
+                .extract()
+                .as(Account.class);
+
+        Double balanceActual = response.getBalance();
+        int transactionCountActual = response.getTransactions().size();
+
+        softly.assertThat(balanceActual)
+                .as("Balance should increase by " + deposit)
+                .isEqualTo(balanceExpected);
+
+        softly.assertThat(transactionCountActual)
+                .as("Transaction count should increase by 1")
+                .isEqualTo(transactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности разместить депозит на чужом аккаунте")
     public void userCannotDepositToAnotherUsersAccountsTest() {
-        double balanceBefore = getCurrentBalanceKateFirstAccount();
+        double kateBalanceExpected = getKateFirstAccountBalance();
+        int kateTransactionsCountExpected = getKateFirstAccountTransactionsCount();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "id": %s,
-                          "balance": 1
-                        }
-                        """.formatted(ALEX_ACCOUNT_ID_FIRST))
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .log().all()
-                .assertThat()
-                .statusCode(HttpStatus.SC_FORBIDDEN)
-                .body(equalTo("Unauthorized access to account"));
+        double alexBalanceExpected = getAlexFirstAccountBalance();
+        int alexTransactionsCountExpected = getAlexFirstAccountTransactionsCount();
 
-        double balanceAfter = getCurrentBalanceKateFirstAccount();
-        Assertions.assertEquals(
-                balanceBefore,
-                balanceAfter,
-                0.01,
-                "Balance should not change");
+        DepositRequest request = DepositRequest.builder()
+                .id(firstAccountId(USER_ALEX))
+                .balance(1)
+                .build();
+
+        new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsForbidden())
+                .post(request)
+                .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
+
+        double kateBalanceActual = getKateFirstAccountBalance();
+        int kateTransactionsCountActual = getKateFirstAccountTransactionsCount();
+
+        double alexBalanceActual = getAlexFirstAccountBalance();
+        int alexTransactionsCountActual = getAlexFirstAccountTransactionsCount();
+
+        // Проверяю, что у Кейт и Алекса не был размещен депозит
+        softly.assertThat(kateBalanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(kateTransactionsCountExpected);
+
+        softly.assertThat(alexBalanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(alexBalanceExpected);
+
+        softly.assertThat(alexTransactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(alexTransactionsCountExpected);
     }
 
     @Test
     @DisplayName("Проверка невозможности разместить депозит на несуществующем аккаунте")
     public void cannotDepositToNonExistentAccountTest() {
-        double balanceBefore = getCurrentBalanceKateFirstAccount();
+        double kateBalanceExpected = getKateFirstAccountBalance();
+        int kateTransactionsCountExpected = getKateFirstAccountTransactionsCount();
 
-        given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .header("Authorization", KATE_AUTH_TOKEN)
-                .body("""
-                        {
-                          "id": 999,
-                          "balance": 1
-                        }
-                        """)
-                .post("/api/v1/accounts/deposit")
-                .then()
-                .log().all()
-                .assertThat()
-                .statusCode(HttpStatus.SC_FORBIDDEN)
-                .body(equalTo("Unauthorized access to account"));
+        DepositRequest request = DepositRequest.builder()
+                .id(NON_EXISTENT_ACCOUNT_ID)
+                .balance(1)
+                .build();
 
-        double balanceAfter = getCurrentBalanceKateFirstAccount();
-        Assertions.assertEquals(
-                balanceBefore,
-                balanceAfter,
-                0.01,
-                "Balance should not change");
+        new DepositRequester(
+                RequestSpecs.authWithTokenSpec(token(USER_KATE)),
+                ResponseSpecs.returnsForbidden())
+                .post(request)
+                .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
+
+        double kateBalanceActual = getKateFirstAccountBalance();
+        int kateTransactionsCountActual = getKateFirstAccountTransactionsCount();
+
+        softly.assertThat(kateBalanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(kateBalanceExpected);
+
+        softly.assertThat(kateTransactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(kateTransactionsCountExpected);
     }
 }
