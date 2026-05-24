@@ -1,7 +1,7 @@
-package iteration_one.transactions_test_cases;
+package iteration_one.api_tests.transactions_test_cases;
 
 import generators.TestUser;
-import iteration_one.BaseTest;
+import iteration_one.api_tests.BaseTest;
 import models.Account;
 import models.DepositRequest;
 import models.TransferRequest;

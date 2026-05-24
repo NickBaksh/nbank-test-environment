@@ -1,8 +1,8 @@
-package iteration_one.deposit_test_cases;
+package iteration_one.api_tests.deposit_test_cases;
 
 import generators.RandomModelGenerator;
 import generators.TestUser;
-import iteration_one.BaseTest;
+import iteration_one.api_tests.BaseTest;
 import models.Account;
 import models.DepositRequest;
 import models.DepositResponse;

@@ -1,7 +1,9 @@
-package iteration_one;
+package iteration_one.api_tests;
 
+import generators.RandomModelGenerator;
 import generators.TestUser;
 import models.*;
+import models.comparison.ModelAssertions;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -17,6 +19,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
+import static generators.testdata.ValidTransferAmounts.validTransferAmount;
+import static org.assertj.core.api.Assertions.assertThat;
+import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 
 public class BaseTest {
 
@@ -25,6 +32,7 @@ public class BaseTest {
 
     protected static Map<String, String> tokens = new HashMap<>();
     protected static Map<String, List<Long>> userAccounts = new HashMap<>();
+    protected static Map<String, String> userUsernames = new HashMap<>();
     protected static CrudRequester adminRequester;
     protected static ValidatedCrudRequester<CreateUserResponse> adminCreateUser;
     protected static ValidatedCrudRequester<CustomerAccountsResponse> customerAccountsReader;
@@ -58,6 +66,8 @@ public class BaseTest {
         // Создаем аккаунты для пользователей в хранилище
         userAccounts.put(TestUser.KATE.getKey(), new ArrayList<>());
         userAccounts.put(TestUser.ALEX.getKey(), new ArrayList<>());
+
+//        userUsernames.put(TestUser.KATE.getKey(), )
 
         // Создаем через API 2 аккаунта для Kate и 1 аккаунт для Alex
         createUserAccounts(TestUser.KATE.getKey(), 2);
@@ -232,13 +242,18 @@ public class BaseTest {
         return requester.read();
     }
 
-    protected static String getCustomerProfileName(String customerName) {
+    public static String getCustomerProfileName(String customerName) {
         CustomerProfileResponse profile = getCustomerProfile(customerName);
         return profile != null ? profile.getName() : null;
     }
 
+    public static String getCustomerUsername(String customerName) {
+        CustomerProfileResponse profile = getCustomerProfile(customerName);
+        return profile != null ? profile.getUsername() : null;
+    }
+
     //========================= Методы создания =============================
-    protected static String createUserAndGetToken(CreateUserRequest request) {
+    public static String createUserAndGetToken(CreateUserRequest request) {
         // Создаем пользователя
         ValidatedCrudRequester<CreateUserResponse> requester = new ValidatedCrudRequester<>(
                 RequestSpecs.adminSpec(),
@@ -252,6 +267,7 @@ public class BaseTest {
                 .username(request.getUsername())
                 .password(request.getPassword())
                 .build();
+
 
         CrudRequester loginRequester = new CrudRequester(
                 RequestSpecs.unauthSpec(),
@@ -271,6 +287,53 @@ public class BaseTest {
                 Endpoint.ACCOUNTS_CREATE
         );
         return requester.create().getId();  // тело запроса пустое
+    }
+
+    public static String updateProfileNameToValidRandomValue(TestUser user) {
+
+        String profileName = Stream.generate(() ->
+                    RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
+            ).limit(1).findFirst().orElseThrow();
+
+
+        UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
+                .builder()
+                .name(profileName)
+                .build();
+
+        UpdateCustomerProfileResponse response = new ValidatedCrudRequester<UpdateCustomerProfileResponse>(
+                RequestSpecs.authWithTokenSpec(token(user.getKey())),
+                ResponseSpecs.requestReturnsOK(),
+                Endpoint.CUSTOMER_PROFILE_UPDATE)
+                .update(request);
+
+        ModelAssertions.assertThatModels(request, response).match();
+
+        // Сравниваю message с ожидаемым значением
+        assertThat(response.getMessage()).isEqualTo(PROFILE_UPDATE_SUCCESS);
+
+        return profileName;
+    }
+
+
+    public static double transferMoneyFromFirstToSecondUserAccount() {
+        double transferAmount = validTransferAmount();
+
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(getKateFirstAccountId())
+                .receiverAccountId(getKateSecondAccountId())
+                .amount(transferAmount)
+                .build();
+
+        TransferResponse response = new ValidatedCrudRequester<TransferResponse>(
+                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                ResponseSpecs.requestReturnsOK(),
+                Endpoint.ACCOUNTS_TRANSFER)
+                .create(request);
+
+        ModelAssertions.assertThatModels(request, response).match();
+
+        return transferAmount;
     }
 
     // Метод repeat вместо цикла
