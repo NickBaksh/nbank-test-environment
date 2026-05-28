@@ -315,7 +315,7 @@ public class TransactionTest extends BaseUiTest {
         double secondAccountBalanceExpected = getKateSecondAccountBalance();
 
         String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        String invalidName = invalidProfileNames().findFirst().orElseThrow();
+        String invalidName = invalidProfileName();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
         authAsUser(TestUser.KATE);

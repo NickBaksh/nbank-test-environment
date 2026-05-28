@@ -16,7 +16,7 @@ public class ProfileNameChangeTest extends BaseUiTest {
     public void userCanChangeProfileNameTest() {
         // Данные для теста
         String expectedUsername = getCustomerUsername(TestUser.KATE.getKey());
-        String validName = validProfileNames().findFirst().orElseThrow();
+        String validName = validProfileName();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
         authAsUser(TestUser.KATE);
