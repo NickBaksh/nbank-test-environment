@@ -1,26 +1,26 @@
 package iteration_one.api_tests.deposit_test_cases;
 
-import generators.RandomModelGenerator;
-import generators.TestUser;
+import api.generators.RandomModelGenerator;
+import api.generators.TestUser;
 import iteration_one.api_tests.BaseTest;
-import models.Account;
-import models.DepositRequest;
-import models.DepositResponse;
-import models.comparison.ModelAssertions;
+import api.models.Account;
+import api.models.DepositRequest;
+import api.models.DepositResponse;
+import api.models.comparison.ModelAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import requests.skelethon.requesters.ValidatedCrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.stream.Stream;
 
+import static api.specs.ResponseSpecs.*;
 import static org.hamcrest.Matchers.equalTo;
-import static specs.ResponseSpecs.*;
 
 public class DepositOperationsTest extends BaseTest {
 

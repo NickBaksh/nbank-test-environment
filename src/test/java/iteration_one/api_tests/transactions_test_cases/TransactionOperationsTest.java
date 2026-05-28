@@ -1,29 +1,29 @@
 package iteration_one.api_tests.transactions_test_cases;
 
-import generators.TestUser;
+import api.generators.TestUser;
 import iteration_one.api_tests.BaseTest;
-import models.Account;
-import models.DepositRequest;
-import models.TransferRequest;
-import models.TransferResponse;
-import models.comparison.ModelAssertions;
+import api.models.Account;
+import api.models.DepositRequest;
+import api.models.TransferRequest;
+import api.models.TransferResponse;
+import api.models.comparison.ModelAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import requests.skelethon.requesters.ValidatedCrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.stream.Stream;
 
-import static generators.testdata.InvalidTransferCase.INSUFFICIENT_FUNDS;
+import static api.generators.testdata.InvalidTransferCase.INSUFFICIENT_FUNDS;
+import static api.specs.RequestSpecs.*;
+import static api.specs.ResponseSpecs.*;
 import static org.hamcrest.Matchers.equalTo;
-import static specs.RequestSpecs.*;
-import static specs.ResponseSpecs.*;
 
 
 public class TransactionOperationsTest extends BaseTest {

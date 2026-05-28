@@ -1,44 +1,32 @@
 package iteration_one.api_tests.profile_name_test_cases;
 
-import generators.RandomModelGenerator;
-import generators.TestUser;
-import generators.testdata.InvalidNameCase;
+import api.generators.RandomModelGenerator;
+import api.generators.TestUser;
+import api.generators.testdata.InvalidNameCase;
 import iteration_one.api_tests.BaseTest;
-import models.UpdateCustomerProfileRequest;
-import models.UpdateCustomerProfileResponse;
-import models.comparison.ModelAssertions;
+import api.models.UpdateCustomerProfileRequest;
+import api.models.UpdateCustomerProfileResponse;
+import api.models.comparison.ModelAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import requests.skelethon.requesters.ValidatedCrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.equalTo;
-import static specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
-import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
+import static api.specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
+import static api.specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 
 public class ProfileNameChangingOperationsTest extends BaseTest {
 
-    // ========== Валидные данные (генерируются из аннотации на модели) ==========
-    public static Stream<String> validProfileNames() {
-        return Stream.generate(() ->
-                RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
-        ).limit(1);
-    }
-
-    // ========== Невалидные данные (генерируются из InvalidNameCase) ==========
-    public static Stream<String> invalidProfileNames() {
-        return Arrays.stream(InvalidNameCase.values())
-                .map(InvalidNameCase::generate);
-    }
-
     @ParameterizedTest
+    // Данные для теста беру из метода в BaseTest
     @MethodSource("validProfileNames")
     @DisplayName("Пользователь может изменить имя профиля на имя из двух слов")
     public void userCanChangeProfileNameToTwoWordsTest(String profileName) {
@@ -60,6 +48,7 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
     }
 
     @ParameterizedTest
+    // Данные для теста беру из метода в BaseTest
     @MethodSource("invalidProfileNames")
     @DisplayName("Пользователь не может изменить имя профиля, " +
             "если оно не соответствует формату 'Слово пробел Слово'")

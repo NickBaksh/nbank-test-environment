@@ -1,13 +1,13 @@
 package iteration_one.api_tests.test_preconditions;
 
-import generators.TestUser;
+import api.generators.TestUser;
 import iteration_one.api_tests.BaseTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
 import static org.hamcrest.Matchers.notNullValue;
 

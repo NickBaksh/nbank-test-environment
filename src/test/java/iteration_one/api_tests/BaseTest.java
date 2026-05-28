@@ -1,29 +1,28 @@
 package iteration_one.api_tests;
 
-import generators.RandomModelGenerator;
-import generators.TestUser;
-import models.*;
-import models.comparison.ModelAssertions;
+import api.generators.RandomModelGenerator;
+import api.generators.TestUser;
+import api.generators.testdata.InvalidNameCase;
+import api.models.*;
+import api.models.comparison.ModelAssertions;
+import api.requests.steps.AdminSteps;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import requests.skelethon.requesters.ValidatedCrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
-import static generators.testdata.ValidTransferAmounts.validTransferAmount;
+import static api.generators.testdata.ValidTransferAmounts.validTransferAmount;
 import static org.assertj.core.api.Assertions.assertThat;
-import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
+import static api.specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 
 public class BaseTest {
 
@@ -32,7 +31,6 @@ public class BaseTest {
 
     protected static Map<String, String> tokens = new HashMap<>();
     protected static Map<String, List<Long>> userAccounts = new HashMap<>();
-    protected static Map<String, String> userUsernames = new HashMap<>();
     protected static CrudRequester adminRequester;
     protected static ValidatedCrudRequester<CreateUserResponse> adminCreateUser;
     protected static ValidatedCrudRequester<CustomerAccountsResponse> customerAccountsReader;
@@ -250,6 +248,38 @@ public class BaseTest {
     public static String getCustomerUsername(String customerName) {
         CustomerProfileResponse profile = getCustomerProfile(customerName);
         return profile != null ? profile.getUsername() : null;
+    }
+
+
+    //============== Методы для генерации данных профиля клиента ============
+
+    // ========== Валидное имя профиля (генерируются из аннотации на модели) ==========
+    public static Stream<String> validProfileNames() {
+        return Stream.generate(() ->
+                RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
+        ).limit(1);
+    }
+
+    public static String validProfileName() {
+        return validProfileNames().findFirst().orElseThrow();
+    }
+
+    // ========== Невалидные имя профиля (генерируются из InvalidNameCase) ==========
+    public static Stream<String> invalidProfileNames() {
+        return Arrays.stream(InvalidNameCase.values())
+                .map(InvalidNameCase::generate);
+    }
+
+    public static String invalidProfileName() {
+        return invalidProfileNames().findFirst().orElseThrow();
+    }
+
+
+    // ========== Методы для получения всех данных через API ==========
+
+    // Получить всех пользователей из системы (через getAll())
+    protected static List<CreateUserResponse> getAllUsers() {
+        return AdminSteps.getAllUsers();
     }
 
     //========================= Методы создания =============================
