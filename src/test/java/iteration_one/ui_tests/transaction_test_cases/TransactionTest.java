@@ -1,41 +1,48 @@
 package iteration_one.ui_tests.transaction_test_cases;
 
-import api.generators.TestUser;
+import api.requests.steps.TestUserContext;
+import api.requests.steps.UserSteps;
+import common.annotations.Browsers;
+import common.annotations.Environments;
+import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ui.pages.UserDashboard;
 
 import static api.generators.testdata.ValidTransferAmounts.validTransferAmount;
+import static api.requests.steps.UserSteps.transferMoneyFromFirstToSecondUserAccount;
 import static ui.pages.BankAlert.*;
-import static ui.pages.TransferPage.TRANSFER_IN;
+import static ui.pages.BasePage.authWithToken;
 import static ui.pages.TransferPage.TRANSFER_PAGE_TITLE;
 
 public class TransactionTest extends BaseUiTest {
 
-    @BeforeEach
-    public void setUpBalance() {
-        ensureKateBalance();
-    }
-
     @Test
-    @DisplayName("Перевод валидной суммы между аккаунтами одного клиента")
+    @DisplayName("Перевод валидной суммы с одного аккаунта на другой")
+    @UserSession
+    @Environments
+    @Browsers
     public void userCanTransferMoneyTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceBeforeTest = getKateFirstAccountBalance();
-        double secondAccountBalanceBeforeTest = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
-        long recipientAccountId = getKateSecondAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceBeforeTest = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceBeforeTest = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
         double transferAmount = validTransferAmount();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -44,12 +51,12 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .makeTransfer(senderAccountId, profileName, recipientAccountId, transferAmount)
-                .verifySuccessfulTransferAlert(transferAmount, recipientAccountId);
+                .makeTransfer(firstAccountId, profileName, secondAccountId, transferAmount)
+                .verifySuccessfulTransferAlert(transferAmount, secondAccountId);
 
         // ШАГ 3: Проверить, что балансы аккаунтов соответствуют ожидаемым
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         double firstAccountBalanceExpected = firstAccountBalanceBeforeTest - transferAmount;
         double secondAccountBalanceExpected = secondAccountBalanceBeforeTest + transferAmount;
@@ -60,20 +67,28 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь не может отправить форму трансфера без выбора аккаунта")
+    @UserSession
+    @Environments
+    @Browsers
     public void cannotSubmitTransferWithoutAccountTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long recipientAccountId = getKateSecondAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long secondAccountId = user.getSecondAccountId();
         double transferAmount = validTransferAmount();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -84,15 +99,15 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .shouldHaveDefaultAccountOption()
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(recipientAccountId)
+                .enterRecipientAccountNumber(secondAccountId)
                 .enterAmount(transferAmount)
                 .checkConfirmCheckbox()
                 .clickTransferButton()
                 .verifyAlertAndAccept(PLEASE_FILL_ALL_FIELDS.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -101,21 +116,29 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь не может отправить форму трансфера без заполнения имени получателя")
+    @UserSession
+    @Environments
+    @Browsers
     public void cannotSubmitTransferWithoutRecipientNameTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
-        long recipientAccountId = getKateSecondAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
         double transferAmount = validTransferAmount();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -124,17 +147,17 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .selectAccount(senderAccountId)
+                .selectAccount(firstAccountId)
                 .shouldHaveEmptyRecipientName()
-                .enterRecipientAccountNumber(recipientAccountId)
+                .enterRecipientAccountNumber(secondAccountId)
                 .enterAmount(transferAmount)
                 .checkConfirmCheckbox()
                 .clickTransferButton()
                 .verifyAlertAndAccept(THE_RECIPIENT_NAME_DOES_NOT_MATCH.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -142,20 +165,28 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь не может отправить форму трансфера без заполнения номера счета получателя")
+    @UserSession
+    @Environments
+    @Browsers
     public void cannotSubmitTransferWithoutRecipientAccountTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
         double transferAmount = validTransferAmount();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -164,7 +195,7 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .selectAccount(senderAccountId)
+                .selectAccount(firstAccountId)
                 .enterRecipientName(profileName)
                 .shouldHaveEmptyRecipientAccount()
                 .enterAmount(transferAmount)
@@ -173,8 +204,8 @@ public class TransactionTest extends BaseUiTest {
                 .verifyAlertAndAccept(PLEASE_FILL_ALL_FIELDS.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -183,20 +214,28 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь не может отправить форму трансфера без заполнения суммы перевода")
+    @UserSession
+    @Environments
+    @Browsers
     public void cannotSubmitTransferWithoutAmountTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
-        long recipientAccountId = getKateSecondAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -205,17 +244,17 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .selectAccount(senderAccountId)
+                .selectAccount(firstAccountId)
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(recipientAccountId)
+                .enterRecipientAccountNumber(secondAccountId)
                 .shouldHaveEmptyAmount()
                 .checkConfirmCheckbox()
                 .clickTransferButton()
                 .verifyAlertAndAccept(PLEASE_FILL_ALL_FIELDS.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -223,21 +262,29 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь не может отправить форму трансфера без подтверждения правильности данных")
+    @UserSession
+    @Environments
+    @Browsers
     public void cannotSubmitTransferWithoutConfirmCheckboxTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
-        long recipientAccountId = getKateSecondAccountId();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
         double transferAmount = validTransferAmount();
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -246,17 +293,17 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .selectAccount(senderAccountId)
+                .selectAccount(firstAccountId)
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(recipientAccountId)
+                .enterRecipientAccountNumber(secondAccountId)
                 .enterAmount(transferAmount)
                 .shouldHaveConfirmCheckboxNotChecked()
                 .clickTransferButton()
                 .verifyAlertAndAccept(PLEASE_FILL_ALL_FIELDS.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -264,21 +311,30 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Пользователь может совершить повторный перевод между своими аккаунтами")
+    @UserSession
+    @Environments
+    @Browsers
     public void repeatedTransfersBetweenAccountsWorkCorrectlyTest() {
 
         // Тестовые данные
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        long senderAccountId = getKateFirstAccountId();
-        long receiverAccountId = getKateSecondAccountId();
-        double modalTransferAmount = validTransferAmount();
-        transferMoneyFromFirstToSecondUserAccount();
+        TestUserContext user = getCurrentUser();
 
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance() - modalTransferAmount;
-        double secondAccountBalanceExpected = getKateSecondAccountBalance() + modalTransferAmount;
+        UserSteps.setUpBalance(user);
+        transferMoneyFromFirstToSecondUserAccount(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
+        double transferAmount = validTransferAmount();
+
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user) - transferAmount;
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user) + transferAmount;
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -290,16 +346,16 @@ public class TransactionTest extends BaseUiTest {
                 .clickTransferAgain()
                 .shouldOpenTransactionHistory()
                 .searchTransactionsByName(profileName)
-                .clickRepeatTransferOnFirstTransaction(TRANSFER_IN)
-                .selectAccountInModal(senderAccountId)
-                .enterAmountInModal(modalTransferAmount)
+                .clickRepeatOnFirstTransferIn()
+                .selectAccountInModal(firstAccountId)
+                .enterAmountInModal(transferAmount)
                 .checkConfirmCheckboxInModal()
                 .clickTransferButtonInModal()
-                .verifySuccessfulTransferAlertInModal(modalTransferAmount, senderAccountId, receiverAccountId);
+                .verifySuccessfulTransferAlertInModal(transferAmount, firstAccountId, secondAccountId);
 
-        // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        // ШАГ 3: Проверить, что балансы аккаунтов изменились
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
@@ -307,18 +363,26 @@ public class TransactionTest extends BaseUiTest {
 
     @Test
     @DisplayName("Поиск несуществующего пользователя в истории транзакций не показывает результатов")
+    @UserSession
+    @Environments
+    @Browsers
     public void searchNonExistentUserShowsNoResultsTest() {
 
         // Тестовые данные
-        String username = getCustomerUsername(TestUser.KATE.getKey());
-        double firstAccountBalanceExpected = getKateFirstAccountBalance();
-        double secondAccountBalanceExpected = getKateSecondAccountBalance();
+        TestUserContext user = getCurrentUser();
 
-        String profileName = updateProfileNameToValidRandomValue(TestUser.KATE);
-        String invalidName = invalidProfileName();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        String username = user.getUsername();
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+
+        String profileName = UserSteps.updateProfileNameToRandomName(user);
+        String invalidName = UserSteps.generateInvalidProfileName();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
@@ -333,8 +397,8 @@ public class TransactionTest extends BaseUiTest {
                 .verifyAlertAndAccept(NO_MATCHING_USERS_FOUND.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
-        double firstAccountBalanceActual = getKateFirstAccountBalance();
-        double secondAccountBalanceActual = getKateSecondAccountBalance();
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
         softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
         softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);

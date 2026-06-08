@@ -1,12 +1,15 @@
 package ui.pages;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.Alert;
+import ui.elements.OperationsList;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 import static com.codeborne.selenide.Selenide.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -160,7 +163,7 @@ public class TransferPage extends BasePage<TransferPage> {
 
     public TransferPage verifySuccessfulTransferAlertInModal(double amount, long senderAccountId, long receiveAccountId) {
         String expectedAlert = String.format("✅ Transfer of $%s successful from Account %d to %d!",
-                new BigDecimal(amount).setScale(2, RoundingMode.HALF_UP), senderAccountId, receiveAccountId);
+                amount, senderAccountId, receiveAccountId);
 
         Alert alert = switchTo().alert();
         String alertText = alert.getText();
@@ -244,5 +247,44 @@ public class TransferPage extends BasePage<TransferPage> {
                 .enterAmountInModal(amount)
                 .checkConfirmCheckboxInModal()
                 .clickTransferButtonInModal();
+    }
+
+    /**
+     * Получить все операции в истории транзакций
+     */
+    public List<OperationsList> getAllOperations() {
+        ElementsCollection elementsCollection = $$(".list-group-item");
+        return generatePageElements(elementsCollection, OperationsList::new);
+    }
+
+    /**
+     * Найти первую операцию по типу
+     */
+    public OperationsList findFirstOperationByType(String expectedType) {
+        return getAllOperations().stream()
+                .filter(operation -> operation.getOperationType().equals(expectedType))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No operation found with type: " + expectedType));
+    }
+
+    /**
+     * Кликнуть Repeat на первой операции TRANSFER_IN
+     */
+    public TransferPage clickRepeatOnFirstTransferIn() {
+        findFirstOperationByType("TRANSFER_IN").clickRepeat();
+        return this;
+    }
+
+    /**
+     * Проверить, что операция с указанным типом существует
+     */
+    public TransferPage shouldHaveOperationType(String expectedType) {
+        boolean exists = getAllOperations().stream()
+                .anyMatch(operation -> operation.getOperationType().equals(expectedType));
+
+        if (!exists) {
+            throw new AssertionError("No operation found with type: " + expectedType);
+        }
+        return this;
     }
 }

@@ -72,7 +72,7 @@ public class DepositPage extends BasePage<DepositPage> {
     // Работа с алертами
     public DepositPage verifySuccessfulDepositAlert(double amount, long accountId) {
         String expectedAlert = String.format("✅ Successfully deposited $%s to account ACC%d!",
-                new BigDecimal(amount).setScale(2, RoundingMode.HALF_UP),
+                amount,
                 accountId);
 
         Alert alert = switchTo().alert();
