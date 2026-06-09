@@ -1,6 +1,7 @@
 package iteration_one.ui_tests.profile_name_test_cases;
 
-import api.generators.TestUser;
+import api.requests.steps.TestUserContext;
+import api.requests.steps.UserSteps;
 import iteration_one.ui_tests.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import ui.pages.UserDashboard;
 
 import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
 import static ui.pages.BankAlert.NAME_UPDATED_SUCCESSFULLY;
+import static ui.pages.BasePage.authWithToken;
 
 public class ProfileNameChangeTest extends BaseUiTest {
 
@@ -15,11 +17,14 @@ public class ProfileNameChangeTest extends BaseUiTest {
     @DisplayName("Проверка изменения имени профиля на валидное значение (два слова состоящие только из букв)")
     public void userCanChangeProfileNameTest() {
         // Данные для теста
-        String expectedUsername = getCustomerUsername(TestUser.KATE.getKey());
+        TestUserContext user = getCurrentUser();
+
+        String token = user.getToken();
+        String expectedUsername = user.getUsername();
         String validName = validProfileName();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Перейти на страницу "User Dashboard"
         new UserDashboard()
@@ -34,8 +39,8 @@ public class ProfileNameChangeTest extends BaseUiTest {
                 .shouldShowAlert(NAME_UPDATED_SUCCESSFULLY.getMessage());
 
         // ШАГ 3: Проверить, что имя профиля обновилось на сервере
-        String profileNameAfterTest = getCustomerProfileName(TestUser.KATE.getKey());
-        softly.assertThat(profileNameAfterTest).isEqualTo(validName);
+        String profileNameActual = UserSteps.getProfileName(user);
+        softly.assertThat(profileNameActual).isEqualTo(validName);
     }
 
 
@@ -44,12 +49,15 @@ public class ProfileNameChangeTest extends BaseUiTest {
     public void userCannotSaveEmptyProfileNameTest() {
 
         // Данные для теста
-        String expectedUsername = getCustomerUsername(TestUser.KATE.getKey());
-        String profileNameExpected = getCustomerProfileName(TestUser.KATE.getKey());
-        String invalidName = invalidProfileName();
+        TestUserContext user = getCurrentUser();
+
+        String token = user.getToken();
+        String expectedUsername = user.getUsername();
+        String invalidName = getRandomInvalidProfileName();
+        String profileNameExpected = UserSteps.getProfileName(user);
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
-        authAsUser(TestUser.KATE);
+        authWithToken(token);
 
         // ШАГ 2: Перейти на страницу "User Dashboard"
         new UserDashboard()
@@ -64,7 +72,7 @@ public class ProfileNameChangeTest extends BaseUiTest {
                 .shouldShowAlert(NAME_MUST_CONTAIN_TWO_WORDS.getMessage());
 
         // ШАГ 3: Проверить, что имя профиля обновилось на сервере
-        String profileNameActual = getCustomerProfileName(TestUser.KATE.getKey());
+        String profileNameActual = UserSteps.getProfileName(user);
         softly.assertThat(profileNameActual).isEqualTo(profileNameExpected);
     }
 }

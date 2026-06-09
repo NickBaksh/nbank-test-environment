@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Account extends BaseModel{
+public class Account extends BaseModel {
     private Long id;
     private String accountNumber;
     private double balance;

@@ -28,7 +28,7 @@ public class UserDashboard extends BasePage<UserDashboard> {
         return "/dashboard";
     }
 
-    public UserDashboard shouldHaveWelcomeText (String expectedText) {
+    public UserDashboard shouldHaveWelcomeText(String expectedText) {
         welcomeTextElement.shouldBe(Condition.visible).shouldHave(Condition.text(expectedText));
         return this;
     }

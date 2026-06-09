@@ -21,7 +21,7 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
         return "/edit-profile";
     }
 
-    public EditProfilePage shouldHaveEditProfileText (String expectedText) {
+    public EditProfilePage shouldHaveEditProfileText(String expectedText) {
         editProfilePageText.shouldBe(Condition.visible).shouldHave(Condition.text(expectedText));
         return this;
     }
