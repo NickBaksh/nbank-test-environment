@@ -8,6 +8,7 @@ import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.selenide.videorecorder.core.Video;
 import ui.pages.UserDashboard;
 
 import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
@@ -51,11 +52,13 @@ public class ProfileNameChangeTest extends BaseUiTest {
 
 
     @Test
+//  @Disabled
     @DisplayName("Проверка UI валидации при отправке некорректного имени профиля")
     @Environments
     @Browsers
-    @UserSession(prefix = "Test__", accounts = 3)
-    public void userCannotSaveEmptyProfileNameTest() {
+    @UserSession
+    @Video
+    public void userCannotSaveInvalidProfileNameTest() {
 
         // Данные для теста
         TestUserContext user = getCurrentUser();
@@ -78,7 +81,7 @@ public class ProfileNameChangeTest extends BaseUiTest {
                 .clearName()
                 .enterName(invalidName)
                 .saveChanges()
-                .shouldShowAlert(NAME_MUST_CONTAIN_TWO_WORDS.getMessage());
+                .saveChangesAndVerifyAlert(NAME_MUST_CONTAIN_TWO_WORDS.getMessage());
 
         // ШАГ 3: Проверить, что имя профиля обновилось на сервере
         String profileNameActual = UserSteps.getProfileName(user);

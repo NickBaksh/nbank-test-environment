@@ -8,8 +8,10 @@ import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.selenide.videorecorder.junit5.VideoRecorderExtension;
 import ui.pages.UserDashboard;
 
 import static api.generators.testdata.ValidDepositAmounts.validDepositAmount;

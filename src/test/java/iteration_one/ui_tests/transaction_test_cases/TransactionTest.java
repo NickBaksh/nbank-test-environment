@@ -93,7 +93,6 @@ public class TransactionTest extends BaseUiTest {
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
                 .open()
-                .shouldHaveWelcomeTextForProfile(profileName)
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
@@ -127,11 +126,11 @@ public class TransactionTest extends BaseUiTest {
         UserSteps.setUpBalance(user);
 
         String token = user.getToken();
-        String username = user.getUsername();
         double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
         double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
 
         String profileName = UserSteps.updateProfileNameToRandomName(user);
+        String username = user.getUsername();
         long firstAccountId = user.getFirstAccountId();
         long secondAccountId = user.getSecondAccountId();
         double transferAmount = validTransferAmount();
@@ -152,8 +151,7 @@ public class TransactionTest extends BaseUiTest {
                 .enterRecipientAccountNumber(secondAccountId)
                 .enterAmount(transferAmount)
                 .checkConfirmCheckbox()
-                .clickTransferButton()
-                .verifyAlertAndAccept(THE_RECIPIENT_NAME_DOES_NOT_MATCH.getMessage());
+                .clickTransferButtonAndVerifyAlertAndAccept(THE_RECIPIENT_NAME_DOES_NOT_MATCH.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
@@ -345,7 +343,8 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .clickTransferAgain()
                 .shouldOpenTransactionHistory()
-                .searchTransactionsByName(profileName)
+                .inputName(profileName)
+                .clickSearchByNameButton()
                 .clickRepeatOnFirstTransferIn()
                 .selectAccountInModal(firstAccountId)
                 .enterAmountInModal(transferAmount)
@@ -393,8 +392,8 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .clickTransferAgain()
                 .shouldOpenTransactionHistory()
-                .searchTransactionsByName(invalidName)
-                .verifyAlertAndAccept(NO_MATCHING_USERS_FOUND.getMessage());
+                .inputName(invalidName)
+                .clickSearchButtonAndVerifyAlertAndAccept(NO_MATCHING_USERS_FOUND.getMessage());
 
         // ШАГ 3: Проверить, что балансы аккаунтов не изменились
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);

@@ -36,10 +36,9 @@ public class LoginUserTest extends BaseUiTest {
     public void userCanLoginWithCorrectDataTest() {
         TestUserContext user = getCurrentUser();
 
-        new LoginPage().open().login(user.getUsername(), user.getPassword())
+        new LoginPage().open()
+                .login(user.getUsername(), user.getPassword())
                 .getPage(UserDashboard.class)
-                .getWelcomeTextElement()
-                .shouldBe(Condition.visible)
-                .shouldHave(Condition.text("Welcome, noname!"));
+                .shouldHaveWelcomeText(WELCOME_TEXT_DEFAULT);
     }
 }

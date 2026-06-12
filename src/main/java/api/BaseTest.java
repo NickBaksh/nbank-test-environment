@@ -35,7 +35,25 @@ public class BaseTest extends DataProviders {
     @BeforeEach
     public void setupTest() {
         this.softly = new SoftAssertions();
-//        this.testContext.clear();
+
+        // Создаем пользователя только для API тестов (если еще не создан)
+        // Для UI тестов пользователь создается в BaseUiTest.setUpUser()
+        if (getCurrentUser() == null && !isUiTest()) {
+            TestUserContext user = UserSteps.createUserWithAccounts("API", "USER", 2);
+            setCurrentUser(user);
+            System.out.println("✅ API Test user created: " + user.getDisplayName());
+        }
+    }
+
+    private boolean isUiTest() {
+        // Проверяем, вызывается ли тест из UI пакета
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTrace) {
+            if (element.getClassName().contains("iteration_one.ui_tests")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @AfterEach
