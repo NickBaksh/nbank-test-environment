@@ -2,12 +2,15 @@ package api.generators.testdata;
 
 import api.generators.RandomModelGenerator;
 import api.models.UpdateCustomerProfileRequest;
+import api.requests.steps.UserSteps;
 import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static api.specs.ResponseSpecs.*;
+import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
+import static ui.pages.BankAlert.PLEASE_ENTER_A_VALID_NAME;
 
 public class DataProviders {
 
@@ -50,11 +53,18 @@ public class DataProviders {
                 .map(InvalidNameCase::generate);
     }
 
+    public static Stream<Arguments> invalidProfileNamesUi() {
+        return Stream.of(
+                Arguments.of(UserSteps.generateInvalidProfileName(), NAME_MUST_CONTAIN_TWO_WORDS.getMessage()),
+                Arguments.of("", PLEASE_ENTER_A_VALID_NAME.getMessage())
+        );
+    }
+
     /**
      * Генерирует случайное невалидное имя
      */
     public static String getRandomInvalidProfileName() {
-        return invalidProfileNames().findFirst().orElseThrow();
+        return invalidProfileNames().findAny().orElseThrow();
     }
 
     // ========== Данные для депозитов ==========

@@ -35,11 +35,20 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
     }
 
     public EditProfilePage enterName(String name) {
-        Selenide.sleep(500);
         assertThat(name).isNotNull();
-        nameField.shouldBe(Condition.visible).sendKeys(name);
-        Selenide.screenshot("shouldBeName");
-        nameField.shouldHave(Condition.value(name));
+
+        nameField.shouldBe(Condition.visible);
+        nameField.clear();
+
+        // Проверяем, что поле стало пустым
+        nameField.shouldHave(Condition.empty);
+
+        // Если имя не пустое и не состоит только из пробелов
+        if (name != null && !name.trim().isEmpty()) {
+            nameField.sendKeys(name);
+            nameField.shouldHave(Condition.value(name));
+        }
+
         return this;
     }
 
@@ -53,7 +62,7 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
     }
 
     public EditProfilePage shouldShowAlert(String expectedMessage) {
-        Selenide.sleep(500);
+//        Selenide.sleep(500);
         Selenide.confirm(expectedMessage);
         return this;
     }

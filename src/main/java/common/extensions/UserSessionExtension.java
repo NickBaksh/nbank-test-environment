@@ -29,7 +29,8 @@ public class UserSessionExtension implements BeforeEachCallback {
             // Сохраняем пользователя в контекст теста
             testInstance.setCurrentUser(userContext);
 
-            System.out.println("🔐 User created via API: " + userContext.getDisplayName());
+            System.out.println("🔐 User created via API for thread " +
+                    Thread.currentThread().getName() + ": " + userContext.getDisplayName());
         }
     }
 }
