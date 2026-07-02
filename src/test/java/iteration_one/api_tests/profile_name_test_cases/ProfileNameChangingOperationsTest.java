@@ -1,54 +1,42 @@
 package iteration_one.api_tests.profile_name_test_cases;
 
-import generators.RandomModelGenerator;
-import generators.TestUser;
-import generators.testdata.InvalidNameCase;
-import iteration_one.api_tests.BaseTest;
-import models.UpdateCustomerProfileRequest;
-import models.UpdateCustomerProfileResponse;
-import models.comparison.ModelAssertions;
+import api.BaseTest;
+import api.models.UpdateCustomerProfileRequest;
+import api.models.UpdateCustomerProfileResponse;
+import api.models.comparison.ModelAssertions;
+import api.requests.skelethon.Endpoint;
+import api.requests.skelethon.requesters.CrudRequester;
+import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.requests.steps.TestUserContext;
+import api.requests.steps.UserSteps;
+import api.specs.RequestSpecs;
+import api.specs.ResponseSpecs;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import requests.skelethon.Endpoint;
-import requests.skelethon.requesters.CrudRequester;
-import requests.skelethon.requesters.ValidatedCrudRequester;
-import specs.RequestSpecs;
-import specs.ResponseSpecs;
 
-import java.util.Arrays;
-import java.util.stream.Stream;
-
+import static api.specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
+import static api.specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 import static org.hamcrest.Matchers.equalTo;
-import static specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
-import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 
 public class ProfileNameChangingOperationsTest extends BaseTest {
 
-    // ========== Валидные данные (генерируются из аннотации на модели) ==========
-    public static Stream<String> validProfileNames() {
-        return Stream.generate(() ->
-                RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
-        ).limit(1);
-    }
-
-    // ========== Невалидные данные (генерируются из InvalidNameCase) ==========
-    public static Stream<String> invalidProfileNames() {
-        return Arrays.stream(InvalidNameCase.values())
-                .map(InvalidNameCase::generate);
-    }
-
     @ParameterizedTest
+    // Данные для теста беру из метода в BaseTest
     @MethodSource("validProfileNames")
     @DisplayName("Пользователь может изменить имя профиля на имя из двух слов")
     public void userCanChangeProfileNameToTwoWordsTest(String profileName) {
+        // Данные для теста
+        TestUserContext user = getCurrentUser();
+        String token = user.getToken();
+
         UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
                 .builder()
                 .name(profileName)
                 .build();
 
         UpdateCustomerProfileResponse response = new ValidatedCrudRequester<UpdateCustomerProfileResponse>(
-                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                RequestSpecs.authWithTokenSpec(token),
                 ResponseSpecs.requestReturnsOK(),
                 Endpoint.CUSTOMER_PROFILE_UPDATE)
                 .update(request);
@@ -60,11 +48,16 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
     }
 
     @ParameterizedTest
+    // Данные для теста беру из метода в BaseTest
     @MethodSource("invalidProfileNames")
     @DisplayName("Пользователь не может изменить имя профиля, " +
             "если оно не соответствует формату 'Слово пробел Слово'")
     public void userCannotChangeProfileNameNotMatchingTwoWordsFormatTest(String profileName) {
-        String profileNameBefore = getCustomerProfileName(TestUser.KATE.getKey());
+        // Данные для теста
+        TestUserContext user = getCurrentUser();
+        String token = user.getToken();
+
+        String profileNameBefore = UserSteps.getProfileName(user);
 
         UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
                 .builder()
@@ -72,13 +65,13 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 .build();
 
         new CrudRequester(
-                RequestSpecs.authWithTokenSpec(token(TestUser.KATE.getKey())),
+                RequestSpecs.authWithTokenSpec(token),
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.CUSTOMER_PROFILE_UPDATE)
                 .update(request)
                 .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
 
-        String profileNameAfter = getCustomerProfileName(TestUser.KATE.getKey());
+        String profileNameAfter = UserSteps.getProfileName(user);
         softly.assertThat(profileNameAfter)
                 .as("Profile name should not be updated")
                 .isEqualTo(profileNameBefore);
