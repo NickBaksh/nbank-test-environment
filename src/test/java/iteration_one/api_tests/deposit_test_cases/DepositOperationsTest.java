@@ -12,6 +12,7 @@ import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import common.annotations.ApiVersion;
 import common.annotations.Browsers;
 import common.annotations.Environments;
 import common.annotations.UserSession;
@@ -26,11 +27,12 @@ import static org.hamcrest.Matchers.equalTo;
 public class DepositOperationsTest extends BaseTest {
 
     @ParameterizedTest
-    @MethodSource("invalidDepositAmountsApi")
+    @MethodSource("invalidDepositAmountsV2Api")
     @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
     @UserSession
     @Browsers({"chrome"})
     @Environments
+    @ApiVersion("v2")
     public void userCanNotDepositInvalidSumTest(double amount, String expectedError) {
 
         TestUserContext user = getCurrentUser();
@@ -66,6 +68,50 @@ public class DepositOperationsTest extends BaseTest {
                 .as("Account transactions count should not change")
                 .isEqualTo(transactionsCountExpected);
     }
+
+
+    @ParameterizedTest
+    @MethodSource("invalidDepositAmountsV1Api")
+    @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
+    @UserSession
+    @Browsers({"chrome"})
+    @Environments
+    public void userCanNotDepositInvalidSumV1Test(double amount, String expectedError) {
+
+        TestUserContext user = getCurrentUser();
+        String token = user.getToken();
+
+        // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
+        // проверяю состояние до запуска теста
+        double balanceExpected = UserSteps.getFirstAccountBalance(user);
+        int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
+
+        // Пробую положить на аккаунт невалидную сумму
+        DepositRequest request = DepositRequest.builder()
+                .id(user.getFirstAccountId())
+                .balance(amount)
+                .build();
+
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request)
+                .body(equalTo(expectedError));
+
+        // проверяю состояние после запуска теста
+        double balanceActual = UserSteps.getFirstAccountBalance(user);
+        int transactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
+
+        softly.assertThat(balanceActual)
+                .as("Account balance should not change")
+                .isEqualTo(balanceExpected);
+
+        softly.assertThat(transactionsCountActual)
+                .as("Account transactions count should not change")
+                .isEqualTo(transactionsCountExpected);
+    }
+
 
     @ParameterizedTest
     @MethodSource("validDepositAmounts")

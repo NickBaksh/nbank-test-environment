@@ -17,7 +17,6 @@ public enum BankAlert {
 
 
     private final String message;
-
     BankAlert(String message) {
         this.message = message;
     }

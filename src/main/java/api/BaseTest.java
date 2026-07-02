@@ -18,6 +18,7 @@ import java.util.List;
 @ExtendWith(BrowserMatchExtension.class)
 @ExtendWith(EnvironmentMatchExtension.class)
 @ExtendWith(TimingExtension.class)
+@ExtendWith(ApiVersionCondition.class)
 public class BaseTest extends DataProviders {
 
     public static final Long NON_EXISTENT_ACCOUNT_ID = 9999999L;

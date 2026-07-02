@@ -10,7 +10,9 @@ import lombok.*;
 public class Transaction extends BaseModel {
     private Long id;
     private double amount;
+    private double amountAsDouble;
     private String type;
     private String timestamp;
+    private String timestampAsString;
     private Long relatedAccountId;
 }

@@ -14,8 +14,8 @@ import org.assertj.core.api.Assertions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 import static api.generators.testdata.DataProviders.BALANCE_5000;
 import static api.generators.testdata.ValidTransferAmounts.validTransferAmount;
@@ -62,7 +62,7 @@ public class UserSteps {
                 .token(token)
                 .userId(response.getId())
                 .role(request.getRole())
-                .accountIds(new ArrayList<>())
+                .accounts(new ConcurrentHashMap<>())
                 .build();
 
         // Сохраняем в хранилище текущего теста
@@ -96,15 +96,25 @@ public class UserSteps {
     /**
      * Создать аккаунт для пользователя
      */
+    /**
+     * Создать аккаунт для пользователя (возвращает ID)
+     */
     public static Long createAccount(TestUserContext userContext) {
         ValidatedCrudRequester<CreateAccountResponse> requester = new ValidatedCrudRequester<>(
                 RequestSpecs.authWithTokenSpec(userContext.getToken()),
                 ResponseSpecs.entityWasCreated(),
                 Endpoint.ACCOUNTS_CREATE
         );
-        Long accountId = requester.create().getId();
-        userContext.getAccountIds().add(accountId);
-        System.out.println("✅ Account created for " + userContext.getUsername() + ": ACC" + accountId);
+        CreateAccountResponse response = requester.create();
+
+        Long accountId = response.getId();
+        String accountNumber = response.getAccountNumber();
+
+        // Сохраняем ID и номер аккаунта
+        userContext.addAccount(accountId, accountNumber);
+
+        System.out.println("✅ Account created for " + userContext.getUsername() +
+                ": " + accountId + " (Number: " + accountNumber + ")");
         return accountId;
     }
 
@@ -130,6 +140,46 @@ public class UserSteps {
         return user;
     }
 
+    // ==================== Новые методы для работы с accountNumber ====================
+
+    /**
+     * Получить номер аккаунта пользователя по ID
+     */
+    public static String getAccountNumber(TestUserContext userContext, Long accountId) {
+        String accountNumber = userContext.getAccountNumber(accountId);
+        if (accountNumber == null) {
+            // Если номер не сохранен, получаем его из API
+            accountNumber = fetchAccountNumberFromApi(userContext, accountId);
+            userContext.addAccount(accountId, accountNumber);
+        }
+        return accountNumber;
+    }
+
+    /**
+     * Получить номер первого аккаунта пользователя
+     */
+    public static String getFirstAccountNumber(TestUserContext userContext) {
+        return getAccountNumber(userContext, userContext.getFirstAccountId());
+    }
+
+    /**
+     * Получить номер второго аккаунта пользователя
+     */
+    public static String getSecondAccountNumber(TestUserContext userContext) {
+        return getAccountNumber(userContext, userContext.getSecondAccountId());
+    }
+
+    /**
+     * Получить номер аккаунта из API (если не сохранен)
+     */
+    private static String fetchAccountNumberFromApi(TestUserContext userContext, Long accountId) {
+        List<Account> accounts = getAllAccounts(userContext);
+        return accounts.stream()
+                .filter(a -> a.getId().equals(accountId))
+                .findFirst()
+                .map(Account::getAccountNumber)
+                .orElseThrow(() -> new AssertionError("Account not found: " + accountId));
+    }
 
     // ==================== Методы доступа к данным ====================
 
@@ -143,11 +193,14 @@ public class UserSteps {
                 Endpoint.CUSTOMER_ACCOUNTS
         ).read();
 
-        return response.getAccounts().stream()
+        double balance = response.getAccounts().stream()
                 .filter(a -> a.getId().equals(accountId))
                 .findFirst()
                 .map(Account::getBalance)
                 .orElseThrow(() -> new AssertionError("Account not found: " + accountId));
+
+        // Округляем до 2 знаков после запятой
+        return Math.round(balance * 100.0) / 100.0;
     }
 
     /**

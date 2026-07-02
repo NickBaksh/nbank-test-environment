@@ -4,11 +4,11 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TimingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
-    private Map<String, Long> startTimes = new HashMap<>();
+    private Map<String, Long> startTimes = new ConcurrentHashMap<>();
 
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {

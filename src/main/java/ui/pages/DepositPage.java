@@ -6,9 +6,6 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.Alert;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,10 +71,22 @@ public class DepositPage extends BasePage<DepositPage> {
     }
 
     // Работа с алертами
-    public DepositPage verifySuccessfulDepositAlert(double amount, long accountId) {
+
+    // Для ID аккаунта (число)
+    public DepositPage verifySuccessfulDepositByAccountId(double amount, long accountId) {
         String expectedAlert = String.format("✅ Successfully deposited $%s to account ACC%d!",
                 amount,
                 accountId);
+
+        Selenide.confirm(expectedAlert);
+        return this;
+    }
+
+    // Для номера аккаунта (строка)
+    public DepositPage verifySuccessfulDepositByAccountNumber(double amount, String accountNumber) {
+        String expectedAlert = String.format("✅ Successfully deposited $%s to account %s!",
+                amount,
+                accountNumber);
 
         Selenide.confirm(expectedAlert);
         return this;

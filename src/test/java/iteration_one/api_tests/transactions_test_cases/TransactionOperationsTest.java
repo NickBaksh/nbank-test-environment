@@ -11,6 +11,7 @@ import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import common.annotations.ApiVersion;
 import common.annotations.UserSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,10 +81,67 @@ public class TransactionOperationsTest extends BaseTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidTransferAmountsApi")
-    @DisplayName("Проверка невозможности отправки невалидной суммы")
+    @MethodSource("invalidTransferAmountsApiV2")
+    @DisplayName("Проверка невозможности отправки невалидной суммы. Тест для API v2")
     @UserSession
-    public void userCannotTransferInvalidSumToAnotherAccountTest(double amount, String expectedError) {
+    @ApiVersion("v2")
+    public void userCannotTransferInvalidSumToAnotherAccountApiV2Test(double amount, String expectedError) {
+        TestUserContext user = getCurrentUser();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
+
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        int firstAccountTransactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
+
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+        int secondAccountTransactionsCountExpected = UserSteps.getSecondAccountTransactionsCount(user);
+
+
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(firstAccountId)
+                .receiverAccountId(secondAccountId)
+                .amount(amount)
+                .build();
+
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.ACCOUNTS_TRANSFER)
+                .create(request)
+                .body(equalTo(expectedError));
+
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
+
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
+        int secondAccountTransactionsCountActual = UserSteps.getSecondAccountTransactionsCount(user);
+
+        softly.assertThat(firstAccountBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(firstAccountBalanceExpected);
+
+        softly.assertThat(firstAccountTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(firstAccountTransactionsCountExpected);
+
+        softly.assertThat(secondAccountBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(secondAccountBalanceExpected);
+
+        softly.assertThat(secondAccountTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(secondAccountTransactionsCountExpected);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("invalidTransferAmountsApiV1")
+    @DisplayName("Проверка невозможности отправки невалидной суммы. Тест для API v1")
+    @UserSession
+    public void userCannotTransferInvalidSumToAnotherAccountApiV1Test(double amount, String expectedError) {
         TestUserContext user = getCurrentUser();
         UserSteps.setUpBalance(user);
 

@@ -9,8 +9,13 @@ public class ResponseSpecs {
     // Константы с сообщениями в response
     // Сообщения об ошибках
     public static final String DEPOSIT_AMOUNT_MIN_ERROR = "Deposit amount must be at least 0.01";
+
     public static final String DEPOSIT_AMOUNT_MAX_ERROR = "Deposit amount cannot exceed 5000";
+    public static final String DEPOSIT_AMOUNT_MAX_ERROR_V_2 = "Deposit amount exceeds the 5000 limit";
+    public static final String INVALID_ACCOUNT_OR_AMOUNT = "Invalid account or amount";
+
     public static final String TRANSFER_AMOUNT_MIN_ERROR = "Transfer amount must be at least 0.01";
+    public static final String TRANSFER_AMOUNT_MIN_ERROR_V_2 = "Invalid transfer: insufficient funds or invalid accounts";
     public static final String TRANSFER_AMOUNT_MAX_ERROR = "Transfer amount cannot exceed 10000";
     public static final String UNAUTHORIZED_ACCESS_ERROR = "Unauthorized access to account";
     public static final String INSUFFICIENT_FUNDS_ERROR = "Invalid transfer: insufficient funds or invalid accounts";

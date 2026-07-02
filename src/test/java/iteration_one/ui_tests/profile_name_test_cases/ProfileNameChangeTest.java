@@ -10,10 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.selenide.videorecorder.core.Video;
 import ui.pages.UserDashboard;
 
-import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
 import static ui.pages.BankAlert.NAME_UPDATED_SUCCESSFULLY;
 import static ui.pages.BasePage.authWithToken;
 

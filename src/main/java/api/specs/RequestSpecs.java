@@ -22,7 +22,7 @@ public class RequestSpecs {
                 .setAccept(ContentType.JSON)
                 .addFilters(List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()))
-                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiVersion"));
+                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiPath") + Config.getProperty("apiVersion"));
     }
 
     public static RequestSpecification unauthSpec() {

@@ -90,11 +90,22 @@ public class DataProviders {
     /**
      * Генерирует невалидные суммы для депозита (с ожидаемыми сообщениями на API)
      */
-    public static Stream<Arguments> invalidDepositAmountsApi() {
+    public static Stream<Arguments> invalidDepositAmountsV2Api() {
         return Stream.of(
                 Arguments.of(-0.01, DEPOSIT_AMOUNT_MIN_ERROR),
                 Arguments.of(0.0, DEPOSIT_AMOUNT_MIN_ERROR),
                 Arguments.of(5000.01, DEPOSIT_AMOUNT_MAX_ERROR)
+        );
+    }
+
+    /**
+     * Генерирует невалидные суммы для депозита (с ожидаемыми сообщениями на API)
+     */
+    public static Stream<Arguments> invalidDepositAmountsV1Api() {
+        return Stream.of(
+                Arguments.of(-0.01, INVALID_ACCOUNT_OR_AMOUNT),
+                Arguments.of(0.0, INVALID_ACCOUNT_OR_AMOUNT),
+                Arguments.of(5000.01, DEPOSIT_AMOUNT_MAX_ERROR_V_2)
         );
     }
 
@@ -122,10 +133,18 @@ public class DataProviders {
         );
     }
 
-    static Stream<Arguments> invalidTransferAmountsApi() {
+    static Stream<Arguments> invalidTransferAmountsApiV2() {
         return Stream.of(
                 Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR),
                 Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR),
+                Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
+        );
+    }
+
+    static Stream<Arguments> invalidTransferAmountsApiV1() {
+        return Stream.of(
+                Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_2),
+                Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_2),
                 Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
         );
     }
