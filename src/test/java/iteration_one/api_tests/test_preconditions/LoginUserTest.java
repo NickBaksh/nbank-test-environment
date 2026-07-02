@@ -1,7 +1,7 @@
-package iteration_one.test_preconditions;
+package iteration_one.api_tests.test_preconditions;
 
 import generators.TestUser;
-import iteration_one.BaseTest;
+import iteration_one.api_tests.BaseTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import requests.skelethon.Endpoint;

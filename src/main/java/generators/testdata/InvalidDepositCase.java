@@ -3,7 +3,7 @@ package generators.testdata;
 import generators.RandomModelGenerator;
 
 public enum InvalidDepositCase {
-    NEGATIVE("^-?\\d+\\.\\d{2}$"),
+    NEGATIVE("^-\\d{1,3}\\.\\d{4}$"),
     ZERO("^0\\.0{2}$"),
     ABOVE_MAX("^5[0-9]{3}\\.[0-9]{2}$");
 

@@ -1,9 +1,9 @@
-package iteration_one.profile_name_test_cases;
+package iteration_one.api_tests.profile_name_test_cases;
 
 import generators.RandomModelGenerator;
 import generators.TestUser;
 import generators.testdata.InvalidNameCase;
-import iteration_one.BaseTest;
+import iteration_one.api_tests.BaseTest;
 import models.UpdateCustomerProfileRequest;
 import models.UpdateCustomerProfileResponse;
 import models.comparison.ModelAssertions;
@@ -26,14 +26,14 @@ import static specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 public class ProfileNameChangingOperationsTest extends BaseTest {
 
     // ========== Валидные данные (генерируются из аннотации на модели) ==========
-    static Stream<String> validProfileNames() {
+    public static Stream<String> validProfileNames() {
         return Stream.generate(() ->
                 RandomModelGenerator.generateWithBuilder(UpdateCustomerProfileRequest.class).getName()
         ).limit(1);
     }
 
     // ========== Невалидные данные (генерируются из InvalidNameCase) ==========
-    static Stream<String> invalidProfileNames() {
+    public static Stream<String> invalidProfileNames() {
         return Arrays.stream(InvalidNameCase.values())
                 .map(InvalidNameCase::generate);
     }
