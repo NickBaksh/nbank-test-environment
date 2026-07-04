@@ -1,6 +1,6 @@
 package iteration_one.ui_tests;
 
-import api.models.CreateUserRequest;
+import api.models.dto_model.CreateUserRequest;
 import api.requests.steps.TestUserContext;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selenide;

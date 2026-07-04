@@ -1,5 +1,6 @@
 package iteration_one.ui_tests.deposit_test_cases;
 
+import api.models.dao_model.AccountDao;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import common.annotations.ApiVersion;

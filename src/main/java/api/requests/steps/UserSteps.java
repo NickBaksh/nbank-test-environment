@@ -2,8 +2,8 @@ package api.requests.steps;
 
 import api.generators.RandomModelGenerator;
 import api.generators.testdata.InvalidNameCase;
-import api.models.*;
 import api.models.comparison.ModelAssertions;
+import api.models.dto_model.*;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;

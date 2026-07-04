@@ -1,7 +1,7 @@
 package api.generators.testdata;
 
 import api.generators.RandomModelGenerator;
-import api.models.UpdateCustomerProfileRequest;
+import api.models.dto_model.UpdateCustomerProfileRequest;
 import api.requests.steps.UserSteps;
 import org.junit.jupiter.params.provider.Arguments;
 

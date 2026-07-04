@@ -2,12 +2,13 @@ package iteration_one.api_tests.deposit_test_cases;
 
 import api.BaseTest;
 import api.generators.RandomModelGenerator;
-import api.models.DepositRequest;
-import api.models.DepositResponse;
+import api.models.dto_model.DepositRequest;
+import api.models.dto_model.DepositResponse;
 import api.models.comparison.ModelAssertions;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.requests.steps.DataBaseSteps;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
@@ -67,6 +68,8 @@ public class DepositOperationsTest extends BaseTest {
         softly.assertThat(transactionsCountActual)
                 .as("Account transactions count should not change")
                 .isEqualTo(transactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, user.getFirstAccountId(), balanceExpected, transactionsCountExpected);
     }
 
 
@@ -110,6 +113,8 @@ public class DepositOperationsTest extends BaseTest {
         softly.assertThat(transactionsCountActual)
                 .as("Account transactions count should not change")
                 .isEqualTo(transactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, user.getFirstAccountId(), balanceExpected, transactionsCountExpected);
     }
 
 
@@ -149,6 +154,8 @@ public class DepositOperationsTest extends BaseTest {
         softly.assertThat(transactionCountActual)
                 .as("Transaction count should increase by 1")
                 .isEqualTo(transactionsCountExpected);
+
+        DataBaseSteps.verifyDepositSaved(softly, accountId, balanceExpected, deposit);
     }
 
     @Test

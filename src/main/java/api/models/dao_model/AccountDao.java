@@ -1,5 +1,6 @@
-package db;
+package api.models.dao_model;
 
+import db.RowMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AccountDao {
-    // RowMapper для преобразования ResultSet в AccountDao
     public static RowMapper<AccountDao> rowMapper = (rs) -> AccountDao.builder()
             .id(rs.getLong("id"))
             .accountNumber(rs.getString("account_number"))

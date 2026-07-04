@@ -4,9 +4,9 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @Builder
@@ -18,7 +18,7 @@ public class TestUserContext {
     private String role;
 
     @Builder.Default
-    private Map<Long, String> accounts = new ConcurrentHashMap<>();
+    private Map<Long, String> accounts = java.util.Collections.synchronizedMap(new LinkedHashMap<>());
 
     // ========== Методы для обратной совместимости ==========
 
@@ -31,6 +31,7 @@ public class TestUserContext {
 
     /**
      * Добавить ID аккаунта (для обратной совместимости)
+     *
      * @deprecated Используйте {@link #addAccount(Long, String)}
      */
     @Deprecated

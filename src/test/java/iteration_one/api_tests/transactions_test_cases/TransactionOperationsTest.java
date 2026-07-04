@@ -1,12 +1,13 @@
 package iteration_one.api_tests.transactions_test_cases;
 
 import api.BaseTest;
-import api.models.TransferRequest;
-import api.models.TransferResponse;
+import api.models.dto_model.TransferRequest;
+import api.models.dto_model.TransferResponse;
 import api.models.comparison.ModelAssertions;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.requests.steps.DataBaseSteps;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
@@ -78,6 +79,9 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should increase by 1")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyTransferSaved(softly, firstAccountId, secondAccountId,
+                firstAccountBalanceExpected, secondAccountBalanceExpected, amount);
     }
 
     @ParameterizedTest
@@ -134,6 +138,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
 
@@ -190,6 +199,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
     @Test
@@ -244,6 +258,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
 
@@ -284,6 +303,9 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(firstAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(firstAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
     }
 
     @Test
@@ -335,6 +357,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
     @Test
@@ -375,5 +402,8 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(firstAccountTransactionsCountActual)
                 .as("Transaction count should increase by 2")
                 .isEqualTo(firstAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifySameAccountTransferSaved(softly, firstAccountId,
+                firstAccountBalanceExpected, TRANSACTION_100);
     }
 }
