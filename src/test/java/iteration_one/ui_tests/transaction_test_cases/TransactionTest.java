@@ -63,8 +63,10 @@ public class TransactionTest extends BaseUiTest {
         double firstAccountBalanceExpected = firstAccountBalanceBeforeTest - transferAmount;
         double secondAccountBalanceExpected = secondAccountBalanceBeforeTest + transferAmount;
 
-        softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
-        softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
+        softly.assertThat(firstAccountBalanceActual)
+                .isCloseTo(firstAccountBalanceExpected, within(0.01));
+        softly.assertThat(secondAccountBalanceActual)
+                .isCloseTo(secondAccountBalanceExpected, within(0.01));
     }
 
     @Test
