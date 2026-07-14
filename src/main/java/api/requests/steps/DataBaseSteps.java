@@ -8,6 +8,7 @@ import db.Condition;
 import db.DBRequest;
 import db.RequestType;
 import db.Tables;
+import lombok.Getter;
 import org.assertj.core.api.SoftAssertions;
 
 import java.util.Comparator;
@@ -16,6 +17,24 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DataBaseSteps {
+
+    public enum Columns {
+        ID("id"),
+        ACCOUNT_NUMBER("account_number"),
+        CUSTOMER_ID("customer_id"),
+        BALANCE("balance"),
+        USERNAME("username"),
+        NAME("name"),
+        ACCOUNT_ID("account_id"),
+        TYPE("type");
+
+        @Getter
+        private final String columnName;
+
+        Columns(String columnName) {
+            this.columnName = columnName;
+        }
+    }
 
     // ============================================
     // ACCOUNTS
@@ -26,7 +45,7 @@ public class DataBaseSteps {
                 DBRequest.<AccountDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.ACCOUNTS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeOne(AccountDao.rowMapper)
         );
@@ -37,7 +56,7 @@ public class DataBaseSteps {
                 DBRequest.<AccountDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.ACCOUNTS.getTableName())
-                        .where(Condition.equalTo("account_number", accountNumber))
+                        .where(Condition.equalTo(Columns.ACCOUNT_NUMBER.getColumnName(), accountNumber))
                         .build()
                         .executeOne(AccountDao.rowMapper)
         );
@@ -48,7 +67,7 @@ public class DataBaseSteps {
                 DBRequest.<AccountDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.ACCOUNTS.getTableName())
-                        .where(Condition.equalTo("customer_id", customerId))
+                        .where(Condition.equalTo(Columns.CUSTOMER_ID.getColumnName(), customerId))
                         .build()
                         .execute(AccountDao.rowMapper)
         );
@@ -69,9 +88,9 @@ public class DataBaseSteps {
                 DBRequest.<AccountDao>builder()
                         .requestType(RequestType.UPDATE)
                         .table(Tables.ACCOUNTS.getTableName())
-                        .columns("balance")
+                        .columns(Columns.BALANCE.getColumnName())
                         .values(newBalance)
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeUpdate()
         );
@@ -82,7 +101,7 @@ public class DataBaseSteps {
                 DBRequest.<AccountDao>builder()
                         .requestType(RequestType.DELETE)
                         .table(Tables.ACCOUNTS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeUpdate()
         );
@@ -97,7 +116,7 @@ public class DataBaseSteps {
                 DBRequest.<CustomerDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.CUSTOMERS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeOne(CustomerDao.rowMapper)
         );
@@ -108,7 +127,7 @@ public class DataBaseSteps {
                 DBRequest.<CustomerDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.CUSTOMERS.getTableName())
-                        .where(Condition.equalTo("username", username))
+                        .where(Condition.equalTo(Columns.USERNAME.getColumnName(), username))
                         .build()
                         .executeOne(CustomerDao.rowMapper)
         );
@@ -129,9 +148,9 @@ public class DataBaseSteps {
                 DBRequest.<CustomerDao>builder()
                         .requestType(RequestType.UPDATE)
                         .table(Tables.CUSTOMERS.getTableName())
-                        .columns("name")
+                        .columns(Columns.NAME.getColumnName())
                         .values(newName)
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeUpdate()
         );
@@ -142,7 +161,7 @@ public class DataBaseSteps {
                 DBRequest.<CustomerDao>builder()
                         .requestType(RequestType.DELETE)
                         .table(Tables.CUSTOMERS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeUpdate()
         );
@@ -157,7 +176,7 @@ public class DataBaseSteps {
                 DBRequest.<TransactionDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.TRANSACTIONS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeOne(TransactionDao.rowMapper)
         );
@@ -168,7 +187,7 @@ public class DataBaseSteps {
                 DBRequest.<TransactionDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.TRANSACTIONS.getTableName())
-                        .where(Condition.equalTo("account_id", accountId))
+                        .where(Condition.equalTo(Columns.ACCOUNT_ID.getColumnName(), accountId))
                         .build()
                         .execute(TransactionDao.rowMapper)
         );
@@ -179,7 +198,7 @@ public class DataBaseSteps {
                 DBRequest.<TransactionDao>builder()
                         .requestType(RequestType.SELECT)
                         .table(Tables.TRANSACTIONS.getTableName())
-                        .where(Condition.equalTo("type", type.name()))
+                        .where(Condition.equalTo(Columns.TYPE.getColumnName(), type.name()))
                         .build()
                         .execute(TransactionDao.rowMapper)
         );
@@ -200,7 +219,7 @@ public class DataBaseSteps {
                 DBRequest.<TransactionDao>builder()
                         .requestType(RequestType.DELETE)
                         .table(Tables.TRANSACTIONS.getTableName())
-                        .where(Condition.equalTo("id", id))
+                        .where(Condition.equalTo(Columns.ID.getColumnName(), id))
                         .build()
                         .executeUpdate()
         );
