@@ -1,12 +1,13 @@
 package iteration_one.api_tests.profile_name_test_cases;
 
 import api.BaseTest;
-import api.models.UpdateCustomerProfileRequest;
-import api.models.UpdateCustomerProfileResponse;
+import api.models.dto_model.UpdateCustomerProfileRequest;
+import api.models.dto_model.UpdateCustomerProfileResponse;
 import api.models.comparison.ModelAssertions;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.requests.steps.DataBaseSteps;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
@@ -47,6 +48,8 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
 
         // Сравниваю message с ожидаемым значением
         softly.assertThat(response.getMessage()).isEqualTo(PROFILE_UPDATE_SUCCESS);
+
+        DataBaseSteps.verifyCustomerProfileName(softly, user.getUsername(), profileName);
     }
 
     @ParameterizedTest
@@ -73,9 +76,11 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
 
         String profileNameAfter = UserSteps.getProfileName(user);
-        ;
+
         softly.assertThat(profileNameAfter)
                 .as("Profile name should not be updated")
                 .isEqualTo(profileNameBefore);
+
+        DataBaseSteps.verifyCustomerProfileNameUnchanged(softly, user.getUsername(), profileNameBefore);
     }
 }

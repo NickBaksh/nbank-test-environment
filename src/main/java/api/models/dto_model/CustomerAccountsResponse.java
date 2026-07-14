@@ -1,5 +1,6 @@
-package api.models;
+package api.models.dto_model;
 
+import api.models.BaseModel;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.*;
 

@@ -3,10 +3,7 @@ package api;
 import api.generators.testdata.DataProviders;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
-import common.extensions.AdminSessionExtension;
-import common.extensions.BrowserMatchExtension;
-import common.extensions.EnvironmentMatchExtension;
-import common.extensions.UserSessionExtension;
+import common.extensions.*;
 import lombok.Setter;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -20,28 +17,35 @@ import java.util.List;
 @ExtendWith(UserSessionExtension.class)
 @ExtendWith(BrowserMatchExtension.class)
 @ExtendWith(EnvironmentMatchExtension.class)
+@ExtendWith(TimingExtension.class)
+@ExtendWith(ApiVersionCondition.class)
 public class BaseTest extends DataProviders {
 
     public static final Long NON_EXISTENT_ACCOUNT_ID = 9999999L;
+
+    private static final ThreadLocal<SoftAssertions> softlyThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<TestContext> testContextThreadLocal = ThreadLocal.withInitial(TestContext::new);
 
     protected SoftAssertions softly;
     protected TestContext testContext;
 
     // Конструктор для инициализации testContext
-    public BaseTest() {
-        this.testContext = new TestContext();
-    }
+    public BaseTest() {}
 
     @BeforeEach
     public void setupTest() {
         this.softly = new SoftAssertions();
+        softlyThreadLocal.set(softly);
+
+        testContext = testContextThreadLocal.get();
 
         // Создаем пользователя только для API тестов (если еще не создан)
         // Для UI тестов пользователь создается в BaseUiTest.setUpUser()
         if (getCurrentUser() == null && !isUiTest()) {
             TestUserContext user = UserSteps.createUserWithAccounts("API", "USER", 2);
             setCurrentUser(user);
-            System.out.println("✅ API Test user created: " + user.getDisplayName());
+            System.out.println("✅ API Test user created for thread " +
+                    Thread.currentThread().getName() + ": " + user.getDisplayName());
         }
     }
 
@@ -58,46 +62,82 @@ public class BaseTest extends DataProviders {
 
     @AfterEach
     public void afterTest() {
-        softly.assertAll();
-        // Очищаем пользователей, созданных в тесте
-        UserSteps.cleanupTestUsers();
+        if (softly != null) {
+            softly.assertAll();
+            softlyThreadLocal.remove();
+        }
+
+        TestContext context = testContextThreadLocal.get();
+        if (context != null) {
+            // Очищаем пользователей, созданных в текущем тесте
+            UserSteps.cleanupTestUser(context.getCurrentUser());
+            for (TestUserContext additionalUser : context.getAdditionalUsers()) {
+                UserSteps.cleanupTestUser(additionalUser);
+            }
+            context.clear();
+        }
     }
 
     // ========== Публичные методы для доступа к контексту ==========
 
     /**
-     * Получить текущего пользователя
+     * Получить текущего пользователя (потокобезопасно)
      */
     public TestUserContext getCurrentUser() {
-        return this.testContext.getCurrentUser();
+        TestContext context = testContextThreadLocal.get();
+        return context != null ? context.getCurrentUser() : null;
     }
 
     /**
-     * Установить текущего пользователя
+     * Установить текущего пользователя (потокобезопасно)
      */
     public void setCurrentUser(TestUserContext userContext) {
-        this.testContext.setCurrentUser(userContext);
+        TestContext context = testContextThreadLocal.get();
+        if (context != null) {
+            context.setCurrentUser(userContext);
+        }
     }
 
     /**
      * Получить токен текущего пользователя
      */
     public String getCurrentToken() {
-        return this.testContext.getCurrentUser().getToken();
+        TestUserContext user = getCurrentUser();
+        return user != null ? user.getToken() : null;
     }
 
     /**
      * Получить первый аккаунт текущего пользователя
      */
     public Long getCurrentFirstAccountId() {
-        return this.testContext.getCurrentUser().getFirstAccountId();
+        TestUserContext user = getCurrentUser();
+        return user != null ? user.getFirstAccountId() : null;
     }
 
     /**
      * Получить второй аккаунт текущего пользователя
      */
     public Long getCurrentSecondAccountId() {
-        return this.testContext.getCurrentUser().getSecondAccountId();
+        TestUserContext user = getCurrentUser();
+        return user != null ? user.getSecondAccountId() : null;
+    }
+
+    /**
+     * Добавить дополнительного пользователя в контекст
+     */
+    public void addAdditionalUser(TestUserContext user) {
+        TestContext context = testContextThreadLocal.get();
+        if (context != null) {
+            context.addUser(user);
+        }
+    }
+
+    /**
+     * Получить всех дополнительных пользователей
+     */
+    public List<TestUserContext> getAdditionalUsers() {
+        TestContext context = testContextThreadLocal.get();
+        return context != null ? context.getAdditionalUsers() : new ArrayList<>();
     }
 
     // Вспомогательный класс для хранения контекста теста

@@ -1,13 +1,16 @@
 package api.generators.testdata;
 
 import api.generators.RandomModelGenerator;
-import api.models.UpdateCustomerProfileRequest;
+import api.models.dto_model.UpdateCustomerProfileRequest;
+import api.requests.steps.UserSteps;
 import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static api.specs.ResponseSpecs.*;
+import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
+import static ui.pages.BankAlert.PLEASE_ENTER_A_VALID_NAME;
 
 public class DataProviders {
 
@@ -50,11 +53,18 @@ public class DataProviders {
                 .map(InvalidNameCase::generate);
     }
 
+    public static Stream<Arguments> invalidProfileNamesUi() {
+        return Stream.of(
+                Arguments.of(UserSteps.generateInvalidProfileName(), NAME_MUST_CONTAIN_TWO_WORDS.getMessage()),
+                Arguments.of("", PLEASE_ENTER_A_VALID_NAME.getMessage())
+        );
+    }
+
     /**
      * Генерирует случайное невалидное имя
      */
     public static String getRandomInvalidProfileName() {
-        return invalidProfileNames().findFirst().orElseThrow();
+        return invalidProfileNames().findAny().orElseThrow();
     }
 
     // ========== Данные для депозитов ==========
@@ -80,11 +90,22 @@ public class DataProviders {
     /**
      * Генерирует невалидные суммы для депозита (с ожидаемыми сообщениями на API)
      */
-    public static Stream<Arguments> invalidDepositAmountsApi() {
+    public static Stream<Arguments> invalidDepositAmountsV2Api() {
         return Stream.of(
                 Arguments.of(-0.01, DEPOSIT_AMOUNT_MIN_ERROR),
                 Arguments.of(0.0, DEPOSIT_AMOUNT_MIN_ERROR),
                 Arguments.of(5000.01, DEPOSIT_AMOUNT_MAX_ERROR)
+        );
+    }
+
+    /**
+     * Генерирует невалидные суммы для депозита (с ожидаемыми сообщениями на API)
+     */
+    public static Stream<Arguments> invalidDepositAmountsV1Api() {
+        return Stream.of(
+                Arguments.of(-0.01, INVALID_ACCOUNT_OR_AMOUNT),
+                Arguments.of(0.0, INVALID_ACCOUNT_OR_AMOUNT),
+                Arguments.of(5000.01, DEPOSIT_AMOUNT_MAX_ERROR_V_2)
         );
     }
 
@@ -112,10 +133,18 @@ public class DataProviders {
         );
     }
 
-    static Stream<Arguments> invalidTransferAmountsApi() {
+    static Stream<Arguments> invalidTransferAmountsApiV2() {
         return Stream.of(
                 Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR),
                 Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR),
+                Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
+        );
+    }
+
+    static Stream<Arguments> invalidTransferAmountsApiV1() {
+        return Stream.of(
+                Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_2),
+                Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_2),
                 Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
         );
     }

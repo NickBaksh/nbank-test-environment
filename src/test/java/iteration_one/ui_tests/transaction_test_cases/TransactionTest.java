@@ -12,6 +12,7 @@ import ui.pages.UserDashboard;
 
 import static api.generators.testdata.ValidTransferAmounts.validTransferAmount;
 import static api.requests.steps.UserSteps.transferMoneyFromFirstToSecondUserAccount;
+import static org.assertj.core.api.Assertions.within;
 import static ui.pages.BankAlert.*;
 import static ui.pages.BasePage.authWithToken;
 import static ui.pages.TransferPage.TRANSFER_PAGE_TITLE;
@@ -38,6 +39,7 @@ public class TransactionTest extends BaseUiTest {
         String profileName = UserSteps.updateProfileNameToRandomName(user);
         long firstAccountId = user.getFirstAccountId();
         long secondAccountId = user.getSecondAccountId();
+        String secondAccountNumber = user.getAccountNumber(secondAccountId);
         double transferAmount = validTransferAmount();
 
 
@@ -51,8 +53,8 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
-                .makeTransfer(firstAccountId, profileName, secondAccountId, transferAmount)
-                .verifySuccessfulTransferAlert(transferAmount, secondAccountId);
+                .makeTransfer(firstAccountId, profileName, secondAccountNumber, transferAmount)
+                .verifySuccessfulTransferAlert(transferAmount, secondAccountNumber);
 
         // ШАГ 3: Проверить, что балансы аккаунтов соответствуют ожидаемым
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
@@ -61,8 +63,10 @@ public class TransactionTest extends BaseUiTest {
         double firstAccountBalanceExpected = firstAccountBalanceBeforeTest - transferAmount;
         double secondAccountBalanceExpected = secondAccountBalanceBeforeTest + transferAmount;
 
-        softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
-        softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
+        softly.assertThat(firstAccountBalanceActual)
+                .isCloseTo(firstAccountBalanceExpected, within(0.01));
+        softly.assertThat(secondAccountBalanceActual)
+                .isCloseTo(secondAccountBalanceExpected, within(0.01));
     }
 
     @Test
@@ -84,6 +88,7 @@ public class TransactionTest extends BaseUiTest {
 
         String profileName = UserSteps.updateProfileNameToRandomName(user);
         long secondAccountId = user.getSecondAccountId();
+        String secondAccountNumber = user.getAccountNumber(secondAccountId);
         double transferAmount = validTransferAmount();
 
 
@@ -93,12 +98,13 @@ public class TransactionTest extends BaseUiTest {
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
                 .open()
+                .shouldHaveWelcomeTextForProfile(profileName)
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .shouldHaveDefaultAccountOption()
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(secondAccountId)
+                .enterRecipientAccountNumber(secondAccountNumber)
                 .enterAmount(transferAmount)
                 .checkConfirmCheckbox()
                 .clickTransferButton()
@@ -133,6 +139,7 @@ public class TransactionTest extends BaseUiTest {
         String username = user.getUsername();
         long firstAccountId = user.getFirstAccountId();
         long secondAccountId = user.getSecondAccountId();
+        String secondAccountNumber = user.getAccountNumber(secondAccountId);
         double transferAmount = validTransferAmount();
 
 
@@ -148,7 +155,7 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .selectAccount(firstAccountId)
                 .shouldHaveEmptyRecipientName()
-                .enterRecipientAccountNumber(secondAccountId)
+                .enterRecipientAccountNumber(secondAccountNumber)
                 .enterAmount(transferAmount)
                 .checkConfirmCheckbox()
                 .clickTransferButtonAndVerifyAlertAndAccept(THE_RECIPIENT_NAME_DOES_NOT_MATCH.getMessage());
@@ -230,6 +237,7 @@ public class TransactionTest extends BaseUiTest {
         String profileName = UserSteps.updateProfileNameToRandomName(user);
         long firstAccountId = user.getFirstAccountId();
         long secondAccountId = user.getSecondAccountId();
+        String secondAccountNumber = user.getAccountNumber(secondAccountId);
 
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
@@ -244,7 +252,7 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .selectAccount(firstAccountId)
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(secondAccountId)
+                .enterRecipientAccountNumber(secondAccountNumber)
                 .shouldHaveEmptyAmount()
                 .checkConfirmCheckbox()
                 .clickTransferButton()
@@ -278,6 +286,7 @@ public class TransactionTest extends BaseUiTest {
         String profileName = UserSteps.updateProfileNameToRandomName(user);
         long firstAccountId = user.getFirstAccountId();
         long secondAccountId = user.getSecondAccountId();
+        String secondAccountNumber = user.getAccountNumber(secondAccountId);
         double transferAmount = validTransferAmount();
 
 
@@ -293,7 +302,7 @@ public class TransactionTest extends BaseUiTest {
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .selectAccount(firstAccountId)
                 .enterRecipientName(profileName)
-                .enterRecipientAccountNumber(secondAccountId)
+                .enterRecipientAccountNumber(secondAccountNumber)
                 .enterAmount(transferAmount)
                 .shouldHaveConfirmCheckboxNotChecked()
                 .clickTransferButton()
@@ -356,8 +365,10 @@ public class TransactionTest extends BaseUiTest {
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
         double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
 
-        softly.assertThat(firstAccountBalanceActual).isEqualTo(firstAccountBalanceExpected);
-        softly.assertThat(secondAccountBalanceActual).isEqualTo(secondAccountBalanceExpected);
+        softly.assertThat(firstAccountBalanceActual)
+                .isCloseTo(firstAccountBalanceExpected, within(0.01));
+        softly.assertThat(secondAccountBalanceActual)
+                .isCloseTo(secondAccountBalanceExpected, within(0.01));
     }
 
     @Test

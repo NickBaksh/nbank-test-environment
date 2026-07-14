@@ -6,7 +6,7 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import api.models.LoginUserRequest;
+import api.models.dto_model.LoginUserRequest;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 
@@ -22,7 +22,7 @@ public class RequestSpecs {
                 .setAccept(ContentType.JSON)
                 .addFilters(List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()))
-                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiVersion"));
+                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiPath") + Config.getProperty("apiVersion"));
     }
 
     public static RequestSpecification unauthSpec() {

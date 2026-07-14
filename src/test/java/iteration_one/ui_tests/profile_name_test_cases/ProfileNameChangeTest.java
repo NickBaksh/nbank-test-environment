@@ -8,10 +8,10 @@ import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.selenide.videorecorder.core.Video;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import ui.pages.UserDashboard;
 
-import static ui.pages.BankAlert.NAME_MUST_CONTAIN_TWO_WORDS;
 import static ui.pages.BankAlert.NAME_UPDATED_SUCCESSFULLY;
 import static ui.pages.BasePage.authWithToken;
 
@@ -51,14 +51,13 @@ public class ProfileNameChangeTest extends BaseUiTest {
     }
 
 
-    @Test
-//  @Disabled
+    @ParameterizedTest
+    @MethodSource("invalidProfileNamesUi")
     @DisplayName("Проверка UI валидации при отправке некорректного имени профиля")
     @Environments
     @Browsers
     @UserSession
-    @Video
-    public void userCannotSaveInvalidProfileNameTest() {
+    public void userCannotSaveInvalidProfileNameTest(String invalidName, String expectedAlert) {
 
         // Данные для теста
         TestUserContext user = getCurrentUser();
@@ -66,7 +65,6 @@ public class ProfileNameChangeTest extends BaseUiTest {
         String token = user.getToken();
         String expectedUsername = user.getUsername();
         String profileNameExpected = UserSteps.getProfileName(user);
-        String invalidName = UserSteps.generateInvalidProfileName();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
         authWithToken(token);
@@ -81,7 +79,7 @@ public class ProfileNameChangeTest extends BaseUiTest {
                 .clearName()
                 .enterName(invalidName)
                 .saveChanges()
-                .saveChangesAndVerifyAlert(NAME_MUST_CONTAIN_TWO_WORDS.getMessage());
+                .saveChangesAndVerifyAlert(expectedAlert);
 
         // ШАГ 3: Проверить, что имя профиля обновилось на сервере
         String profileNameActual = UserSteps.getProfileName(user);

@@ -2,7 +2,6 @@ package ui.pages;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selectors;
-import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import lombok.Getter;
 import org.openqa.selenium.By;
@@ -43,7 +42,6 @@ public class UserDashboard extends BasePage<UserDashboard> {
     }
 
     public UserDashboard shouldHaveWelcomeTextForProfile(String profileName) {
-        Selenide.sleep(500);
         String expectedText = getWelcomeText(profileName);
         welcomeTextElement.shouldBe(Condition.visible)
                 .shouldHave(Condition.text(expectedText), Duration.ofSeconds(10));

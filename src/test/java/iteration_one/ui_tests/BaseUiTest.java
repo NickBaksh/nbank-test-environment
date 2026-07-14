@@ -30,6 +30,7 @@ public class BaseUiTest extends BaseTest {
         Configuration.baseUrl = api.configs.Config.getProperty("uiBaseUrl");
         Configuration.browser = api.configs.Config.getProperty("Configuration.browser");
         Configuration.browserSize = api.configs.Config.getProperty("Configuration.browserSize");
+        Configuration.headless = false;
 
         Configuration.browserCapabilities.setCapability("selenoid:options",
                 Map.of("enableVNC", true, "enableLog", true));
@@ -44,14 +45,15 @@ public class BaseUiTest extends BaseTest {
     @BeforeEach
     public void setUp() {
         if (WebDriverRunner.hasWebDriverStarted()) {
-            Selenide.clearBrowserCookies();
-            Selenide.clearBrowserLocalStorage();
-            Selenide.executeJavaScript("window.localStorage.clear();");
-            Selenide.executeJavaScript("window.sessionStorage.clear();");
             Selenide.closeWebDriver();
-
-            open("/");
         }
+
+        open("/");
+
+        Selenide.clearBrowserCookies();
+        Selenide.clearBrowserLocalStorage();
+        Selenide.executeJavaScript("window.localStorage.clear();");
+        Selenide.executeJavaScript("window.sessionStorage.clear();");
     }
 
     @AfterEach

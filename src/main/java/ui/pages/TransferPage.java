@@ -83,7 +83,7 @@ public class TransferPage extends BasePage<TransferPage> {
         return this;
     }
 
-    // ========== Действия с формой перевода (Actions) ==========
+    // ========== Действия с формой перевода (RequestType) ==========
 
     public TransferPage selectAccount(long accountId) {
         String accountValue = String.valueOf(accountId);
@@ -147,9 +147,9 @@ public class TransferPage extends BasePage<TransferPage> {
         return this;
     }
 
-    public TransferPage verifySuccessfulTransferAlert(double amount, long accountId) {
-        String expectedAlert = String.format("✅ Successfully transferred $%s to account ACC%d!",
-                amount, accountId);
+    public TransferPage verifySuccessfulTransferAlert(double amount, String accountNumber) {
+        String expectedAlert = String.format("✅ Successfully transferred $%s to account %s!",
+                amount, accountNumber);
 
         Selenide.confirm(expectedAlert);
         return this;
@@ -165,10 +165,21 @@ public class TransferPage extends BasePage<TransferPage> {
 
     // ========== Комбинированные действия ==========
 
+    // Делаем перевод в котором accountNumber == ACC + accountId
     public TransferPage makeTransfer(long fromAccountId, String recipientName, long toAccountId, double amount) {
         return selectAccount(fromAccountId)
                 .enterRecipientName(recipientName)
                 .enterRecipientAccountNumber(toAccountId)
+                .enterAmount(amount)
+                .checkConfirmCheckbox()
+                .clickTransferButton();
+    }
+
+    // Делаем перевод в котором accountNumber генерируется в новом формате
+    public TransferPage makeTransfer(long fromAccountId, String recipientName, String toAccountNumber, double amount) {
+        return selectAccount(fromAccountId)
+                .enterRecipientName(recipientName)
+                .enterRecipientAccountNumber(toAccountNumber)
                 .enterAmount(amount)
                 .checkConfirmCheckbox()
                 .clickTransferButton();

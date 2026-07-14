@@ -1,6 +1,6 @@
 package common.extensions;
 
-import api.models.CreateUserRequest;
+import api.models.dto_model.CreateUserRequest;
 import common.annotations.AdminSession;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
