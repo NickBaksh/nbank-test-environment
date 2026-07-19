@@ -1,6 +1,6 @@
 services:
   backend:
-    image: nobugsme/nbank:with_database_with_fix
+    image: nobugsme/nbank:with_fraud_check_with_transfer_fix
     container_name: nbank-backend
     ports:
       - "4111:4111"
@@ -9,11 +9,21 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - FRAUD_DETECTION_SERVICE_URL=http://wiremock:8080  # Изменено с host.docker.internal на wiremock
     depends_on:
       postgres:
         condition: service_healthy
+      wiremock:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - nbank-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:4111/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   postgres:
     image: postgres:15-alpine
@@ -26,11 +36,26 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-#      - ./init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - nbank-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d nbank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  wiremock:
+    image: wiremock/wiremock:latest
+    container_name: nbank-wiremock
+    ports:
+      - "8080:8080"  # Пробрасываем порт на хост для тестирования
+    volumes:
+      - ./wiremock:/home/wiremock  # Монтируем папку с маппингами
+    command: --global-response-templating --disable-gzip  # Включаем шаблонизацию ответов
+    networks:
+      - nbank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
       interval: 10s
       timeout: 5s
       retries: 5
