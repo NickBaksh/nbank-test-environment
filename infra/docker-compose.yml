@@ -9,7 +9,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
-      - FRAUD_DETECTION_SERVICE_URL=http://wiremock:8080  # Изменено с host.docker.internal на wiremock
+      - FRAUD_DETECTION_SERVICE_URL=http://wiremock:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,10 +48,10 @@ services:
     image: wiremock/wiremock:latest
     container_name: nbank-wiremock
     ports:
-      - "8080:8080"  # Пробрасываем порт на хост для тестирования
+      - "8080:8080"
     volumes:
-      - ./wiremock:/home/wiremock  # Монтируем папку с маппингами
-    command: --global-response-templating --disable-gzip  # Включаем шаблонизацию ответов
+      - ./wiremock:/home/wiremock
+    command: --global-response-templating --disable-gzip
     networks:
       - nbank-network
     healthcheck:

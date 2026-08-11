@@ -32,7 +32,7 @@ public class RandomModelGenerator {
             for (Field field : modelClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(GeneratingRule.class)) {
                     GeneratingRule rule = field.getAnnotation(GeneratingRule.class);
-                    String value = generateFromRegex(rule.regex());  // ← новый метод
+                    String value = generateFromRegex(rule.regex());
                     setBuilderField(builder, field.getName(), value, field.getType());
                 }
             }

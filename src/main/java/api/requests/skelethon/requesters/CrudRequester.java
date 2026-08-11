@@ -5,6 +5,7 @@ import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.HttpRequest;
 import api.requests.skelethon.interfaces.CrudEndpointInterface;
 import api.requests.skelethon.interfaces.GetAllEndpointInterface;
+import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
@@ -33,6 +34,19 @@ public class CrudRequester extends HttpRequest implements CrudEndpointInterface,
         return create(null);
     }
 
+    public Response createResponse(BaseModel model) {
+        var body = model == null ? "" : model;
+        return given()
+                .spec(requestSpecification)
+                .body(body)
+                .post(endpoint.getUrl())
+                .then()
+                .assertThat()
+                .spec(responseSpecification)
+                .extract()
+                .response();
+    }
+
     @Override
     public ValidatableResponse read() {
         return given()
@@ -52,6 +66,18 @@ public class CrudRequester extends HttpRequest implements CrudEndpointInterface,
                 .then()
                 .assertThat()
                 .spec(responseSpecification);
+    }
+
+    public Response readResponse(long id) {
+        return given()
+                .spec(requestSpecification)
+                .pathParam(endpoint.getPathParam(), id)
+                .get(endpoint.getUrl())
+                .then()
+                .assertThat()
+                .spec(responseSpecification)
+                .extract()
+                .response();
     }
 
     @Override

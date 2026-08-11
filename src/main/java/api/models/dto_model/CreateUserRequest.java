@@ -11,7 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class CreateUserRequest extends BaseModel {
-    @GeneratingRule(regex = "^[A-Za-z0-9]{3,10}$")
+    @GeneratingRule(regex = "^[A-Za-z0-9]{3,5}$")
     private String username;
 
     @GeneratingRule(regex = "^[a-z]{2}[A-Z]{2}[0-9]{2}[!@#^&]{1}[a-z]{1}[A-Z]{1}$")

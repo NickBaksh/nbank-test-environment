@@ -18,7 +18,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import static api.constants.JsonFields.MESSAGE;
 
+import static api.generators.testdata.DataProviders.*;
 import static api.generators.testdata.InvalidTransferCase.INSUFFICIENT_FUNDS;
 import static api.specs.ResponseSpecs.INSUFFICIENT_FUNDS_ERROR;
 import static org.hamcrest.Matchers.equalTo;
@@ -176,7 +178,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(equalTo(expectedError));
+                .body(MESSAGE, equalTo(expectedError));
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
         int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
@@ -235,7 +237,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
+                .body(MESSAGE, equalTo(INSUFFICIENT_FUNDS_ERROR));
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
         int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
@@ -289,7 +291,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
+                .body(MESSAGE,equalTo(INSUFFICIENT_FUNDS_ERROR));
 
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
