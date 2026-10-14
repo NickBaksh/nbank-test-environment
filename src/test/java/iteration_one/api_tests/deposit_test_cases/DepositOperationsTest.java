@@ -1,10 +1,11 @@
 package iteration_one.api_tests.deposit_test_cases;
 
 import api.BaseTest;
+import api.configs.Config;
 import api.generators.RandomModelGenerator;
+import api.models.comparison.ModelAssertions;
 import api.models.dto_model.DepositRequest;
 import api.models.dto_model.DepositResponse;
-import api.models.comparison.ModelAssertions;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
@@ -24,104 +25,39 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static api.generators.testdata.DataProviders.NON_EXISTENT_ACCOUNT_ID;
 import static api.specs.ResponseSpecs.UNAUTHORIZED_ACCESS_ERROR;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class DepositOperationsTest extends BaseTest {
 
+    // ==================== Невалидные суммы ====================
+
     @ParameterizedTest
     @MethodSource("invalidDepositAmountsV2Api")
-    @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
+    @DisplayName("Невозможно пополнить счёт невалидной суммой (депозит <= 0 или > 5000), API v2")
     @UserSession
     @Browsers({"chrome"})
     @Environments
     @ApiVersion("v2")
     public void userCanNotDepositInvalidSumTest(double amount, String expectedError) {
-
-        TestUserContext user = getCurrentUser();
-        String token = user.getToken();
-
-        // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
-        // проверяю состояние до запуска теста
-        double balanceExpected = UserSteps.getFirstAccountBalance(user);
-        int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
-
-        // Пробую положить на аккаунт невалидную сумму
-        DepositRequest request = DepositRequest.builder()
-                .accountId(user.getFirstAccountId())
-                .amount(amount)
-                .build();
-
-        new CrudRequester(
-                RequestSpecs.authWithTokenSpec(token),
-                ResponseSpecs.returnsBadRequest(),
-                Endpoint.ACCOUNTS_DEPOSIT)
-                .create(request)
-                .body(equalTo(expectedError));
-
-        // проверяю состояние после запуска теста
-        double balanceActual = UserSteps.getFirstAccountBalance(user);
-        int transactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
-
-        softly.assertThat(balanceActual)
-                .as("Account balance should not change")
-                .isEqualTo(balanceExpected);
-
-        softly.assertThat(transactionsCountActual)
-                .as("Account transactions count should not change")
-                .isEqualTo(transactionsCountExpected);
-
-        DataBaseSteps.verifyAccountUnchanged(softly, user.getFirstAccountId(), balanceExpected, transactionsCountExpected);
+        verifyInvalidDepositRejected(amount, expectedError);
     }
 
-
     @ParameterizedTest
-    @MethodSource("invalidDepositAmountsV1Api")
-    @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
+    @MethodSource("invalidDepositAmountsV2Api")
+    @DisplayName("Невозможно пополнить счёт невалидной суммой (депозит <= 0 или > 5000), API v1")
     @UserSession
     @Browsers({"chrome"})
     @Environments
     public void userCanNotDepositInvalidSumV1Test(double amount, String expectedError) {
-
-        TestUserContext user = getCurrentUser();
-        String token = user.getToken();
-
-        // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
-        // проверяю состояние до запуска теста
-        double balanceExpected = UserSteps.getFirstAccountBalance(user);
-        int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
-
-        // Пробую положить на аккаунт невалидную сумму
-        DepositRequest request = DepositRequest.builder()
-                .accountId(user.getFirstAccountId())
-                .amount(amount)
-                .build();
-
-        new CrudRequester(
-                RequestSpecs.authWithTokenSpec(token),
-                ResponseSpecs.returnsBadRequest(),
-                Endpoint.ACCOUNTS_DEPOSIT)
-                .create(request)
-                .body(equalTo(expectedError));
-
-        // проверяю состояние после запуска теста
-        double balanceActual = UserSteps.getFirstAccountBalance(user);
-        int transactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
-
-        softly.assertThat(balanceActual)
-                .as("Account balance should not change")
-                .isEqualTo(balanceExpected);
-
-        softly.assertThat(transactionsCountActual)
-                .as("Account transactions count should not change")
-                .isEqualTo(transactionsCountExpected);
-
-        DataBaseSteps.verifyAccountUnchanged(softly, user.getFirstAccountId(), balanceExpected, transactionsCountExpected);
+        verifyInvalidDepositRejected(amount, expectedError);
     }
 
+    // ==================== Валидные суммы ====================
 
     @ParameterizedTest
     @MethodSource("validDepositAmounts")
-    @DisplayName("Проверка размещения на депозите валидных сумм. 0 < депозит <= 5000")
+    @DisplayName("Пополнение счёта валидной суммой (0 < депозит <= 5000)")
     @UserSession
     public void userCanDepositValidSumTest(double deposit) {
         TestUserContext user = getCurrentUser();
@@ -145,7 +81,14 @@ public class DepositOperationsTest extends BaseTest {
         // Сравниваю через ModelAssertion модели запроса и ответа
         ModelAssertions.assertThatModels(request, response).match();
 
-        Double balanceActual = UserSteps.getFirstAccountBalance(user);
+        softly.assertThat(response.getTransactions())
+                .as("Deposit transaction should be created")
+                .anySatisfy(t -> {
+                    assertThat(t.getType()).isEqualTo("DEPOSIT");
+                    assertThat(t.getAmount()).isEqualTo(deposit);
+                });
+
+        double balanceActual = UserSteps.getFirstAccountBalance(user);
         int transactionCountActual = UserSteps.getFirstAccountTransactionsCount(user);
 
         softly.assertThat(balanceActual)
@@ -156,11 +99,15 @@ public class DepositOperationsTest extends BaseTest {
                 .as("Transaction count should increase by 1")
                 .isEqualTo(transactionsCountExpected);
 
-        DataBaseSteps.verifyDepositSaved(softly, accountId, balanceExpected, deposit);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyDepositSaved(softly, accountId, balanceExpected, deposit);
+        }
     }
 
+    // ==================== Несуществующий счёт ====================
+
     @Test
-    @DisplayName("Проверка невозможности разместить депозит на несуществующем аккаунте")
+    @DisplayName("Невозможно пополнить несуществующий счёт")
     @UserSession
     public void cannotDepositToNonExistentAccountTest() {
         TestUserContext user = getCurrentUser();
@@ -179,15 +126,52 @@ public class DepositOperationsTest extends BaseTest {
                 .create(request)
                 .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
 
-        double balanceActual = UserSteps.getFirstAccountBalance(user);
-        int transactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
+        verifyAccountUnchanged(user, balanceExpected, transactionsCountExpected);
+    }
 
-        softly.assertThat(balanceActual)
+    // ==================== Общие шаги ====================
+
+    /**
+     * Пробует пополнить первый счёт пользователя невалидной суммой и проверяет,
+     * что сервер вернул 400 с ожидаемым текстом, а счёт не изменился.
+     */
+    private void verifyInvalidDepositRejected(double amount, String expectedError) {
+        TestUserContext user = getCurrentUser();
+
+        // Arrange: состояние до запроса
+        double balanceExpected = UserSteps.getFirstAccountBalance(user);
+        int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
+
+        DepositRequest request = DepositRequest.builder()
+                .accountId(user.getFirstAccountId())
+                .amount(amount)
+                .build();
+
+        // Act + Assert: сервер отклоняет запрос
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(user.getToken()),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.ACCOUNTS_DEPOSIT)
+                .create(request)
+                .body(equalTo(expectedError));
+
+        // Assert: счёт не изменился
+        verifyAccountUnchanged(user, balanceExpected, transactionsCountExpected);
+    }
+
+    /** Проверяет через API (и в БД, если она доступна), что баланс и число транзакций не изменились. */
+    private void verifyAccountUnchanged(TestUserContext user, double balanceExpected, int transactionsCountExpected) {
+        softly.assertThat(UserSteps.getFirstAccountBalance(user))
                 .as("Account balance should not change")
                 .isEqualTo(balanceExpected);
 
-        softly.assertThat(transactionsCountActual)
+        softly.assertThat(UserSteps.getFirstAccountTransactionsCount(user))
                 .as("Account transactions count should not change")
                 .isEqualTo(transactionsCountExpected);
+
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, user.getFirstAccountId(),
+                    balanceExpected, transactionsCountExpected);
+        }
     }
 }

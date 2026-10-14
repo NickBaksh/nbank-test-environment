@@ -1,0 +1,29 @@
+# Сборка и результаты прогонов
+target/
+build/
+logs/
+test-results/
+allure-results/
+
+# IDE и системные файлы
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Git и Docker
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+
+# Секреты и публикация образа
+.env
+.env.*
+push-tests.sh
+
+# Файлы проекта, не нужные для запуска тестов
+infra/
+test-cases/
+wiremock/
+cp.txt

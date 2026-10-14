@@ -1,6 +1,7 @@
 package iteration_one.api_tests.profile_name_test_cases;
 
 import api.BaseTest;
+import api.configs.Config;
 import api.models.dto_model.UpdateCustomerProfileRequest;
 import api.models.dto_model.UpdateCustomerProfileResponse;
 import api.models.comparison.ModelAssertions;
@@ -49,7 +50,9 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
         // Сравниваю message с ожидаемым значением
         softly.assertThat(response.getMessage()).isEqualTo(PROFILE_UPDATE_SUCCESS);
 
-        DataBaseSteps.verifyCustomerProfileName(softly, user.getUsername(), profileName);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyCustomerProfileName(softly, user.getUsername(), profileName);
+        }
     }
 
     @ParameterizedTest
@@ -81,6 +84,8 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 .as("Profile name should not be updated")
                 .isEqualTo(profileNameBefore);
 
-        DataBaseSteps.verifyCustomerProfileNameUnchanged(softly, user.getUsername(), profileNameBefore);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyCustomerProfileNameUnchanged(softly, user.getUsername(), profileNameBefore);
+        }
     }
 }

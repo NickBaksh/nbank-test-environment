@@ -481,13 +481,11 @@ public class UserSteps {
                 .amount(transferAmount)
                 .build();
 
-        CrudRequester requester = new CrudRequester(
+        TransferResponse response = new ValidatedCrudRequester<TransferResponse>(
                 RequestSpecs.authWithTokenSpec(token),
                 ResponseSpecs.requestReturnsOK(),
-                Endpoint.ACCOUNTS_TRANSFER
-        );
-
-        Response response = requester.createResponse(request);
+                Endpoint.ACCOUNTS_TRANSFER)
+                .create(request);
 
         ModelAssertions.assertThatModels(request, response).match();
         return transferAmount;

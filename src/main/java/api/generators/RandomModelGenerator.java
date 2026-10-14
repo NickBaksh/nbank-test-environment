@@ -57,7 +57,7 @@ public class RandomModelGenerator {
 
             if (field.isAnnotationPresent(GeneratingRule.class)) {
                 GeneratingRule rule = field.getAnnotation(GeneratingRule.class);
-                String value = generateFromRegex(rule.regex());  // ← новый метод
+                String value = generateFromRegex(rule.regex());
                 setFieldValue(instance, field, value);
             }
         }

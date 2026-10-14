@@ -16,4 +16,3 @@ public class Account extends BaseModel {
     private double balance;
     private List<Transaction> transactions;
 }
-
