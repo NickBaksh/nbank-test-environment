@@ -37,3 +37,12 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Secrets ###
+.env
+
+### Test results ###
+test-results/
+logs/
+allure-results/
+cp.txt

@@ -7,6 +7,7 @@ public enum BankAlert {
     USER_CREATED_SUCCESSFULLY("✅ User created successfully!"),
     NAME_UPDATED_SUCCESSFULLY("✅ Name updated successfully!"),
     NAME_MUST_CONTAIN_TWO_WORDS("Name must contain two words with letters only"),
+    PLEASE_ENTER_A_VALID_NAME("❌ Please enter a valid name."),
     PLEASE_SELECT_AN_ACCOUNT("❌ Please select an account."),
     PLEASE_ENTER_A_VALID_AMOUNT("❌ Please enter a valid amount."),
     PLEASE_DEPOSIT_LESS_OR_EQUAL_TO_5000("❌ Please deposit less or equal to 5000$."),
@@ -16,7 +17,6 @@ public enum BankAlert {
 
 
     private final String message;
-
     BankAlert(String message) {
         this.message = message;
     }

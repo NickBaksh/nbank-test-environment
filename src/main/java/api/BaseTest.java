@@ -4,127 +4,149 @@ import api.generators.testdata.DataProviders;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import common.extensions.AdminSessionExtension;
-import common.extensions.BrowserMatchExtension;
-import common.extensions.EnvironmentMatchExtension;
 import common.extensions.UserSessionExtension;
-import lombok.Setter;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-@ExtendWith(AdminSessionExtension.class)
-@ExtendWith(UserSessionExtension.class)
-@ExtendWith(BrowserMatchExtension.class)
-@ExtendWith(EnvironmentMatchExtension.class)
-public class BaseTest extends DataProviders {
-
-    public static final Long NON_EXISTENT_ACCOUNT_ID = 9999999L;
+@ExtendWith({UserSessionExtension.class, AdminSessionExtension.class})
+public class BaseTest {
 
     protected SoftAssertions softly;
-    protected TestContext testContext;
 
-    // Конструктор для инициализации testContext
-    public BaseTest() {
-        this.testContext = new TestContext();
-    }
+    private TestUserContext currentUser;
+    private List<TestUserContext> users = new ArrayList<>();
 
     @BeforeEach
-    public void setupTest() {
-        this.softly = new SoftAssertions();
-
-        // Создаем пользователя только для API тестов (если еще не создан)
-        // Для UI тестов пользователь создается в BaseUiTest.setUpUser()
-        if (getCurrentUser() == null && !isUiTest()) {
-            TestUserContext user = UserSteps.createUserWithAccounts("API", "USER", 2);
-            setCurrentUser(user);
-            System.out.println("✅ API Test user created: " + user.getDisplayName());
+    public void setUp() {
+        softly = new SoftAssertions();
+        if (users == null) {
+            users = new ArrayList<>();
         }
-    }
-
-    private boolean isUiTest() {
-        // Проверяем, вызывается ли тест из UI пакета
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : stackTrace) {
-            if (element.getClassName().contains("iteration_one.ui_tests")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @AfterEach
     public void afterTest() {
-        softly.assertAll();
-        // Очищаем пользователей, созданных в тесте
-        UserSteps.cleanupTestUsers();
-    }
-
-    // ========== Публичные методы для доступа к контексту ==========
-
-    /**
-     * Получить текущего пользователя
-     */
-    public TestUserContext getCurrentUser() {
-        return this.testContext.getCurrentUser();
-    }
-
-    /**
-     * Установить текущего пользователя
-     */
-    public void setCurrentUser(TestUserContext userContext) {
-        this.testContext.setCurrentUser(userContext);
-    }
-
-    /**
-     * Получить токен текущего пользователя
-     */
-    public String getCurrentToken() {
-        return this.testContext.getCurrentUser().getToken();
-    }
-
-    /**
-     * Получить первый аккаунт текущего пользователя
-     */
-    public Long getCurrentFirstAccountId() {
-        return this.testContext.getCurrentUser().getFirstAccountId();
-    }
-
-    /**
-     * Получить второй аккаунт текущего пользователя
-     */
-    public Long getCurrentSecondAccountId() {
-        return this.testContext.getCurrentUser().getSecondAccountId();
-    }
-
-    // Вспомогательный класс для хранения контекста теста
-    protected static class TestContext {
-        private final List<TestUserContext> additionalUsers = new ArrayList<>();
-        @Setter
-        private TestUserContext currentUser;
-
-        public TestUserContext getCurrentUser() {
-            return currentUser;
-        }
-
-        public void addUser(TestUserContext user) {
-            additionalUsers.add(user);
-        }
-
-        public List<TestUserContext> getAdditionalUsers() {
-            return additionalUsers;
-        }
-
-        public TestUserContext getFirstAdditionalUser() {
-            return additionalUsers.isEmpty() ? null : additionalUsers.get(0);
-        }
-
-        public void clear() {
+        try {
+            if (softly != null) {
+                softly.assertAll();
+            }
+        } finally {
+            try {
+                UserSteps.cleanupTestUsers();
+            } catch (Exception e) {
+                System.err.println("Error during cleanup: " + e.getMessage());
+            }
+            users = null;
             currentUser = null;
-            additionalUsers.clear();
+            softly = null;
         }
+    }
+
+
+    public static Stream<Double> validTransferAmounts() {
+        return DataProviders.validTransferAmounts();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV1() {
+        return DataProviders.invalidTransferAmountsApiV1();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV2() {
+        return DataProviders.invalidTransferAmountsApiV2();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV3() {
+        return DataProviders.invalidTransferAmountsApiV3();
+    }
+
+    public static Stream<Double> validDepositAmounts() {
+        return DataProviders.validDepositAmounts();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsV1Api() {
+        return DataProviders.invalidDepositAmountsV1Api();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsV2Api() {
+        return DataProviders.invalidDepositAmountsV2Api();
+    }
+
+    public static Stream<String> validProfileNames() {
+        return DataProviders.validProfileNames();
+    }
+
+    public static Stream<String> invalidProfileNames() {
+        return DataProviders.invalidProfileNames();
+    }
+
+    public static Stream<Arguments> invalidProfileNamesUi() {
+        return DataProviders.invalidProfileNamesUi();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsUi() {
+        return DataProviders.invalidDepositAmountsUi();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsUi() {
+        return DataProviders.invalidTransferAmountsUi();
+    }
+
+    // ========== Getters и Setters ==========
+
+    public TestUserContext getCurrentUser() {
+        if (currentUser == null && users != null && !users.isEmpty()) {
+            return users.get(0);
+        }
+        return currentUser;
+    }
+
+    public void setCurrentUser(TestUserContext currentUser) {
+        this.currentUser = currentUser;
+        if (currentUser != null && (users == null || users.isEmpty())) {
+            users = new ArrayList<>();
+            users.add(currentUser);
+        }
+    }
+
+    public List<TestUserContext> getUsers() {
+        return users != null ? users : new ArrayList<>();
+    }
+
+    public void setUsers(List<TestUserContext> users) {
+        this.users = users != null ? users : new ArrayList<>();
+        if (!this.users.isEmpty() && currentUser == null) {
+            this.currentUser = this.users.get(0);
+        }
+    }
+
+    public TestUserContext getUser(int index) {
+        if (users != null && index >= 0 && index < users.size()) {
+            return users.get(index);
+        }
+        throw new IndexOutOfBoundsException("User at index " + index + " not found. Total users: " +
+                (users != null ? users.size() : 0));
+    }
+
+    public int getUserCount() {
+        return users != null ? users.size() : 0;
+    }
+
+    public TestUserContext getFirstUser() {
+        return getUser(0);
+    }
+
+    public TestUserContext getSecondUser() {
+        if (users == null || users.size() < 2) {
+            throw new IllegalStateException("Less than 2 users available. Current: " +
+                    (users != null ? users.size() : 0));
+        }
+        return getUser(1);
     }
 }

@@ -1,6 +1,7 @@
 package api.requests.skelethon;
 
 import api.models.*;
+import api.models.dto_model.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 //import models.*;
@@ -45,6 +46,12 @@ public enum Endpoint {
             "/accounts/transfer",
             TransferRequest.class,
             TransferResponse.class,
+            null
+    ),
+    ACCOUNTS_TRANSFER_WITH_FRAUD_CHECK(
+            "/accounts/transfer-with-fraud-check",
+            TransferWithFraudCheckRequest.class,
+            TransferWithFraudCheckResponse.class,
             null
     ),
     ACCOUNTS_TRANSACTIONS(

@@ -1,78 +1,123 @@
 package api.models.comparison;
 
-import api.models.BaseModel;
 import org.assertj.core.api.AbstractAssert;
 
 import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-public class ModelAssertions extends AbstractAssert<ModelAssertions, BaseModel> {
+public class ModelAssertions extends AbstractAssert<ModelAssertions, Object> {
 
-    private final BaseModel request;
-    private final BaseModel response;
+    private final Object source;
+    private final Object target;
     private final ModelComparator comparator;
 
-    private ModelAssertions(BaseModel request, BaseModel response) {
-        super(response, ModelAssertions.class);
-        this.request = request;
-        this.response = response;
+    private ModelAssertions(Object source, Object target) {
+        super(target, ModelAssertions.class);
+        this.source = source;
+        this.target = target;
         this.comparator = ModelComparator.getInstance();
     }
 
-    public static ModelAssertions assertThatModels(BaseModel request, BaseModel response) {
-        return new ModelAssertions(request, response);
+    /**
+     * Статический метод для сравнения любых моделей
+     */
+    public static ModelAssertions assertThatModels(Object source, Object target) {
+        return new ModelAssertions(source, target);
     }
 
     /**
-     * Сравнивает все поля запроса и ответа согласно маппингу в properties.
-     * Пропускает поля, помеченные как игнорируемые (password).
+     * Сравнивает все поля согласно маппингу в properties
      */
-    public void match() {
+    public ModelAssertions match() {
         isNotNull();
 
-        Map<String, String> mapping = comparator.getFieldMapping(
-                request.getClass(), response.getClass()
-        );
+        Class<?> sourceClass = source.getClass();
+        Class<?> targetClass = target.getClass();
+
+        Map<String, String> mapping = comparator.getFieldMapping(sourceClass, targetClass);
 
         if (mapping.isEmpty()) {
-            failWithMessage("No mapping found for %s → %s in model-comparison.properties",
-                    request.getClass().getSimpleName(),
-                    response.getClass().getSimpleName());
-            return;
+            failWithMessage(
+                    "No mapping found for %s → %s in model-comparison.properties",
+                    sourceClass.getSimpleName(),
+                    targetClass.getSimpleName()
+            );
+            return this;
         }
 
-        Set<String> ignoredFields = comparator.getIgnoredFields(
-                request.getClass(), response.getClass()
-        );
+        Set<String> ignoredFields = comparator.getIgnoredFields(sourceClass, targetClass);
 
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
-            String requestField = entry.getKey();
-            String responsePath = entry.getValue();
+            String sourceField = entry.getKey();
+            String targetPath = entry.getValue();
 
-            if (ignoredFields.contains(requestField)) {
+            if (ignoredFields.contains(sourceField)) {
+                debug("Ignoring field: " + sourceField);
                 continue;
             }
 
-            Object requestValue = getFieldValue(request, requestField);
-            Object responseValue = getNestedFieldValue(response, responsePath);
+            Object sourceValue = getFieldValue(source, sourceField);
+            Object targetValue = getNestedFieldValue(target, targetPath);
 
-            if (!Objects.equals(requestValue, responseValue)) {
+            // 🆕 Используем улучшенное сравнение
+            if (!comparator.compareValues(sourceValue, targetValue)) {
                 failWithActualExpectedAndMessage(
-                        responseValue,
-                        requestValue,
-                        "\nField mismatch: request.%s → response.%s".formatted(requestField, responsePath)
+                        targetValue,
+                        sourceValue,
+                        "\nField mismatch: %s.%s → %s.%s\n" +
+                                "Expected: %s\n" +
+                                "Actual:   %s",
+                        sourceClass.getSimpleName(), sourceField,
+                        targetClass.getSimpleName(), targetPath,
+                        sourceValue, targetValue
                 );
             }
         }
+
+        return this;
     }
+
+    /**
+     * Сравнить только указанные поля
+     */
+    public ModelAssertions matchOnly(String... fields) {
+        isNotNull();
+
+        Class<?> sourceClass = source.getClass();
+        Class<?> targetClass = target.getClass();
+
+        Map<String, String> mapping = comparator.getFieldMapping(sourceClass, targetClass);
+        Set<String> fieldSet = new HashSet<>(Arrays.asList(fields));
+
+        for (Map.Entry<String, String> entry : mapping.entrySet()) {
+            String sourceField = entry.getKey();
+            if (!fieldSet.contains(sourceField)) {
+                continue;
+            }
+
+            Object sourceValue = getFieldValue(source, sourceField);
+            Object targetValue = getNestedFieldValue(target, entry.getValue());
+
+            if (!comparator.compareValues(sourceValue, targetValue)) {
+                failWithActualExpectedAndMessage(
+                        targetValue,
+                        sourceValue,
+                        "\nField mismatch: %s → %s",
+                        sourceField, entry.getValue()
+                );
+            }
+        }
+
+        return this;
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
     private Object getFieldValue(Object obj, String fieldName) {
         try {
             Field field = findField(obj.getClass(), fieldName);
             if (field == null) {
-                failWithMessage("Field '%s' not found in %s", fieldName, obj.getClass().getSimpleName());
+                debug("Field '" + fieldName + "' not found in " + obj.getClass().getSimpleName());
                 return null;
             }
             field.setAccessible(true);
@@ -100,5 +145,11 @@ public class ModelAssertions extends AbstractAssert<ModelAssertions, BaseModel> 
             }
         }
         return null;
+    }
+
+    private void debug(String message) {
+        if (ModelComparator.DEBUG) {
+            System.out.println("[ModelAssertions] " + message);
+        }
     }
 }

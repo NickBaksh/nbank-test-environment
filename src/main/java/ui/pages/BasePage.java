@@ -1,6 +1,6 @@
 package ui.pages;
 
-import api.models.CreateUserRequest;
+import api.models.dto_model.CreateUserRequest;
 import api.specs.RequestSpecs;
 import com.codeborne.selenide.*;
 import org.openqa.selenium.Alert;
