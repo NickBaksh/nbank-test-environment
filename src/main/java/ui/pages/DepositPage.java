@@ -64,28 +64,26 @@ public class DepositPage extends BasePage<DepositPage> {
     }
 
     public DepositPage clickDepositButton() {
-        depositButton.shouldBe(Condition.visible).click();
+        depositButton
+                .shouldBe(Condition.visible)
+                .shouldBe(Condition.enabled)
+                .shouldBe(Condition.interactable)
+                .click();
         return this;
     }
 
     // Работа с алертами
     public DepositPage verifySuccessfulDepositAlert(double amount, long accountId) {
         String expectedAlert = String.format("✅ Successfully deposited $%s to account ACC%d!",
-                new BigDecimal(amount).setScale(2, RoundingMode.HALF_UP),
+                amount,
                 accountId);
 
-        Alert alert = switchTo().alert();
-        String actualText = alert.getText();
-        assertThat(actualText).isEqualTo(expectedAlert);
-        alert.accept();
-
+        Selenide.confirm(expectedAlert);
         return this;
     }
 
     public DepositPage verifyAlertAndAccept(String expectedMessage) {
-        Alert alert = switchTo().alert();
-        assertThat(alert.getText()).isEqualTo(expectedMessage);
-        alert.accept();
+        Selenide.confirm(expectedMessage);
         return this;
     }
 

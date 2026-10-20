@@ -12,6 +12,9 @@ import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import common.annotations.Browsers;
+import common.annotations.Environments;
+import common.annotations.UserSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,21 +28,22 @@ public class DepositOperationsTest extends BaseTest {
     @ParameterizedTest
     @MethodSource("invalidDepositAmountsApi")
     @DisplayName("Проверка невозможности разместить невалидную сумму на счёте. 0 < депозит <= 5000")
+    @UserSession
+    @Browsers({"chrome"})
+    @Environments
     public void userCanNotDepositInvalidSumTest(double amount, String expectedError) {
-        // Данные для теста
+
         TestUserContext user = getCurrentUser();
         String token = user.getToken();
 
         // Использую паттерн Arrange-Act-Assert(AAA) для проверки результатов теста
         // проверяю состояние до запуска теста
-        long accountId = user.getFirstAccountId();
-
         double balanceExpected = UserSteps.getFirstAccountBalance(user);
         int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
 
         // Пробую положить на аккаунт невалидную сумму
         DepositRequest request = DepositRequest.builder()
-                .id(accountId)
+                .id(user.getFirstAccountId())
                 .balance(amount)
                 .build();
 
@@ -66,13 +70,12 @@ public class DepositOperationsTest extends BaseTest {
     @ParameterizedTest
     @MethodSource("validDepositAmounts")
     @DisplayName("Проверка размещения на депозите валидных сумм. 0 < депозит <= 5000")
+    @UserSession
     public void userCanDepositValidSumTest(double deposit) {
-        // Данные для теста
         TestUserContext user = getCurrentUser();
+
         String token = user.getToken();
-
         long accountId = user.getFirstAccountId();
-
         double balanceExpected = UserSteps.getFirstAccountBalance(user) + deposit;
         int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user) + 1;
 
@@ -90,8 +93,8 @@ public class DepositOperationsTest extends BaseTest {
         // Сравниваю через ModelAssertion модели запроса и ответа
         ModelAssertions.assertThatModels(request, response).match();
 
-        Double balanceActual = response.getBalance();
-        int transactionCountActual = response.getTransactions().size();
+        Double balanceActual = UserSteps.getFirstAccountBalance(user);
+        int transactionCountActual = UserSteps.getFirstAccountTransactionsCount(user);
 
         softly.assertThat(balanceActual)
                 .as("Balance should increase by " + deposit)
@@ -104,11 +107,11 @@ public class DepositOperationsTest extends BaseTest {
 
     @Test
     @DisplayName("Проверка невозможности разместить депозит на несуществующем аккаунте")
+    @UserSession
     public void cannotDepositToNonExistentAccountTest() {
-        // Данные для теста
         TestUserContext user = getCurrentUser();
-        String token = user.getToken();
 
+        String token = user.getToken();
         double balanceExpected = UserSteps.getFirstAccountBalance(user);
         int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
 
@@ -132,9 +135,5 @@ public class DepositOperationsTest extends BaseTest {
         softly.assertThat(transactionsCountActual)
                 .as("Account transactions count should not change")
                 .isEqualTo(transactionsCountExpected);
-    }
-
-    // Подготавливаю тестовые данные
-    public record InvalidDepositCase(double amount, String expectedError) {
     }
 }

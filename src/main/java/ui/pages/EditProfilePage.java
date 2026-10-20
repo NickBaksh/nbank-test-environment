@@ -5,6 +5,7 @@ import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.Alert;
+import utils.AlertHelper;
 
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.switchTo;
@@ -29,24 +30,31 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
     public EditProfilePage clearName() {
         nameField.clear();
         nameField.shouldHave(Condition.empty);
+        Selenide.screenshot("clearName_changeProfileName");
         return this;
     }
 
     public EditProfilePage enterName(String name) {
-        Selenide.sleep(300);
-        nameField.sendKeys(name);
+        Selenide.sleep(500);
+        assertThat(name).isNotNull();
+        nameField.shouldBe(Condition.visible).sendKeys(name);
+        Selenide.screenshot("shouldBeName");
+        nameField.shouldHave(Condition.value(name));
         return this;
     }
 
     public EditProfilePage saveChanges() {
-        saveChangesButton.shouldBe(Condition.visible).click();
+        saveChangesButton
+                .shouldBe(Condition.visible)
+                .shouldBe(Condition.enabled)
+                .shouldBe(Condition.interactable)
+                .click();
         return this;
     }
 
     public EditProfilePage shouldShowAlert(String expectedMessage) {
-        Alert alert = switchTo().alert();
-        assertThat(alert.getText()).isEqualTo(expectedMessage);
-        alert.accept();
+        Selenide.sleep(500);
+        Selenide.confirm(expectedMessage);
         return this;
     }
 
@@ -54,5 +62,11 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
         saveChangesButton.click();
         switchTo().alert().accept();
         return new UserDashboard();
+    }
+
+    public EditProfilePage saveChangesAndVerifyAlert(String expectedMessage) {
+        // Кликаем и ждем alert с автоматическими повторными попытками
+        AlertHelper.clickAndVerifyAlert(saveChangesButton, expectedMessage);
+        return this;
     }
 }

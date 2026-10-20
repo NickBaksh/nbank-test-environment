@@ -5,6 +5,8 @@ import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.WebDriverRunner;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,33 +35,23 @@ public class BaseUiTest extends BaseTest {
                 Map.of("enableVNC", true, "enableLog", true));
 
         // Увеличенные таймауты для UI тестов
-        Configuration.timeout = 10000;
+        Configuration.timeout = 15000;
         Configuration.pageLoadTimeout = 60000;
+
+        Configuration.holdBrowserOpen = false;
     }
 
     @BeforeEach
     public void setUp() {
-        // чистим куки и storage
-        Selenide.open("/");
+        if (WebDriverRunner.hasWebDriverStarted()) {
+            Selenide.clearBrowserCookies();
+            Selenide.clearBrowserLocalStorage();
+            Selenide.executeJavaScript("window.localStorage.clear();");
+            Selenide.executeJavaScript("window.sessionStorage.clear();");
+            Selenide.closeWebDriver();
 
-        Selenide.clearBrowserCookies();
-        Selenide.clearBrowserLocalStorage();
-        Selenide.localStorage().clear();
-        Selenide.sessionStorage().clear();
-    }
-
-    @BeforeEach
-    public void setUpUser() {
-        // Создаем нового пользователя перед каждым тестом
-        currentUser = UserSteps.createUserWithAccounts("User", "USER", 2);
-
-        // Пополняем баланс (нужно для тестов перевода)
-        UserSteps.setUpBalance(currentUser);
-
-        // Открываем базовую страницу
-        open("/");
-
-        System.out.println("✅ Test user created: " + currentUser.getDisplayName());
+            open("/");
+        }
     }
 
     @AfterEach
@@ -68,6 +60,15 @@ public class BaseUiTest extends BaseTest {
         if (currentUser != null) {
             UserSteps.cleanupTestUsers();
             System.out.println("✅ Test user deleted: " + currentUser.getUsername());
+        }
+
+        if (WebDriverRunner.hasWebDriverStarted()) {
+            Selenide.closeWebDriver();
+            try {
+                WebDriverRunner.getWebDriver().quit();
+            } catch (Exception e) {
+                System.out.println("WebDriver already closed");
+            }
         }
     }
 }

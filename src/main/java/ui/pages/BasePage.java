@@ -2,11 +2,12 @@ package ui.pages;
 
 import api.models.CreateUserRequest;
 import api.specs.RequestSpecs;
-import com.codeborne.selenide.Selectors;
-import com.codeborne.selenide.Selenide;
-import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.WebDriverConditions;
+import com.codeborne.selenide.*;
 import org.openqa.selenium.Alert;
+import ui.elements.BaseElement;
+
+import java.util.List;
+import java.util.function.Function;
 
 import static com.codeborne.selenide.Selenide.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,6 @@ public abstract class BasePage<T extends BasePage> {
 
     /**
      * Авторизация через CreateUserRequest (устаревший метод, будет удалён)
-     *
      * @deprecated Используйте {@link #authWithToken(String)} или {@link #authWithCredentials(String, String)}
      */
     @Deprecated
@@ -69,5 +69,11 @@ public abstract class BasePage<T extends BasePage> {
         assertThat(alert.getText()).contains(bankAlert.getMessage());
         alert.accept();
         return (T) this;
+    }
+
+    // ElementCollection -> List<BaseElement>
+    protected <T extends BaseElement> List<T> generatePageElements(ElementsCollection elementsCollection,
+                                                                   Function<SelenideElement, T> constructor) {
+        return elementsCollection.stream().map(constructor).toList();
     }
 }

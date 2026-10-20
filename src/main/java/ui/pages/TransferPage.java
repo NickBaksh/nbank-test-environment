@@ -1,20 +1,25 @@
 package ui.pages;
 
-import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.Selectors;
-import com.codeborne.selenide.SelenideElement;
-import org.openqa.selenium.Alert;
+import com.codeborne.selenide.*;
+import ui.elements.OperationsList;
+import utils.AlertHelper;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.Duration;
+import java.util.List;
 
-import static com.codeborne.selenide.Selenide.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 public class TransferPage extends BasePage<TransferPage> {
+    // Константы
+    public static final String TRANSFER_PAGE_TITLE = "🔄 Make a Transfer";
+    public static final String DEFAULT_ACCOUNT_OPTION = "-- Choose an account --";
+    public static final String MATCHING_TRANSACTIONS_TITLE = "Matching Transactions";
+    public static final String REPEAT_TRANSFER_TITLE = "🔄 Repeat Transfer";
+    public static final String TRANSFER_IN = "TRANSFER_IN";
+    public static final String TRANSFER_OUT = "TRANSFER_OUT";
     // Заголовок страницы
     private final SelenideElement pageTitle = $(Selectors.byText("\uD83D\uDD04 Make a Transfer"));
-
     // Поля формы перевода
     private final SelenideElement accountSelector = $(".form-control.account-selector");
     private final SelenideElement recipientNameField = $(Selectors.byAttribute("placeholder", "Enter recipient name"));
@@ -22,30 +27,18 @@ public class TransferPage extends BasePage<TransferPage> {
     private final SelenideElement amountField = $(Selectors.byAttribute("placeholder", "Enter amount"));
     private final SelenideElement confirmCheckbox = $("#confirmCheck");
     private final SelenideElement transferButton = $(Selectors.byText("\uD83D\uDE80 Send Transfer"));
-
     // Кнопка "Transfer Again" для перехода к истории
     private final SelenideElement transferAgainButton = $(Selectors.byText("\uD83D\uDD01 Transfer Again"));
-
     // Элементы страницы истории транзакций
     private final SelenideElement matchingTransactionsTitle = $(Selectors.byText("Matching Transactions"));
     private final SelenideElement searchNameField = $(Selectors.byAttribute("placeholder", "Enter name to find transactions"));
     private final SelenideElement searchButton = $(Selectors.byText("\uD83D\uDD0D Search Transactions"));
-
     // Элементы модального окна повторного перевода
     private final SelenideElement modalAccountSelector = $(".modal-body select");
     private final SelenideElement modalAmountField = $(".modal-body input[type='number']");
     private final SelenideElement modalConfirmCheckbox = $("#confirmCheck");
     private final SelenideElement modalTransferButton = $(Selectors.byText("\uD83D\uDE80 Send Transfer"));
     private final SelenideElement repeatTransferTitle = $(Selectors.byText("\uD83D\uDD01 Repeat Transfer"));
-
-    // Константы
-    public static final String TRANSFER_PAGE_TITLE = "🔄 Make a Transfer";
-    public static final String DEFAULT_ACCOUNT_OPTION = "-- Choose an account --";
-    public static final String MATCHING_TRANSACTIONS_TITLE = "Matching Transactions";
-    public static final String REPEAT_TRANSFER_TITLE = "🔄 Repeat Transfer";
-
-    public static final String TRANSFER_IN = "TRANSFER_IN";
-    public static final String TRANSFER_OUT = "TRANSFER_OUT";
 
     @Override
     public String url() {
@@ -94,7 +87,7 @@ public class TransferPage extends BasePage<TransferPage> {
 
     public TransferPage selectAccount(long accountId) {
         String accountValue = String.valueOf(accountId);
-        accountSelector.selectOptionByValue(accountValue);
+        accountSelector.shouldBe(Condition.visible).selectOptionByValue(accountValue);
         shouldHaveSelectedAccountValue(accountValue);
         return this;
     }
@@ -133,16 +126,24 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage clickTransferButton() {
-        transferButton.shouldBe(Condition.visible).click();
+        transferButton.shouldBe(Condition.visible).shouldBe(Condition.enabled).click();
         return this;
     }
 
     // ========== Проверка алертов ==========
 
     public TransferPage verifyAlertAndAccept(String expectedMessage) {
-        Alert alert = switchTo().alert();
-        assertThat(alert.getText()).isEqualTo(expectedMessage);
-        alert.accept();
+        Selenide.confirm(expectedMessage);
+        return this;
+    }
+
+    public TransferPage clickTransferButtonAndVerifyAlertAndAccept(String expectedMessage) {
+        AlertHelper.clickAndVerifyAlert(transferButton, expectedMessage);
+        return this;
+    }
+
+    public TransferPage clickSearchButtonAndVerifyAlertAndAccept(String expectedMessage) {
+        AlertHelper.clickAndVerifyAlert(searchButton, expectedMessage);
         return this;
     }
 
@@ -150,25 +151,17 @@ public class TransferPage extends BasePage<TransferPage> {
         String expectedAlert = String.format("✅ Successfully transferred $%s to account ACC%d!",
                 amount, accountId);
 
-        Alert alert = switchTo().alert();
-        String alertText = alert.getText();
-        assertThat(alertText).isEqualTo(expectedAlert);
-
-        alert.accept();
+        Selenide.confirm(expectedAlert);
         return this;
     }
 
     public TransferPage verifySuccessfulTransferAlertInModal(double amount, long senderAccountId, long receiveAccountId) {
         String expectedAlert = String.format("✅ Transfer of $%s successful from Account %d to %d!",
-                new BigDecimal(amount).setScale(2, RoundingMode.HALF_UP), senderAccountId, receiveAccountId);
-
-        Alert alert = switchTo().alert();
-        String alertText = alert.getText();
-        assertThat(alertText).isEqualTo(expectedAlert);
-
-        alert.accept();
+                amount, senderAccountId, receiveAccountId);
+        Selenide.confirm(expectedAlert);
         return this;
     }
+
 
     // ========== Комбинированные действия ==========
 
@@ -184,7 +177,10 @@ public class TransferPage extends BasePage<TransferPage> {
     // ========== Действия с историей транзакций ==========
 
     public TransferPage clickTransferAgain() {
-        transferAgainButton.shouldBe(Condition.visible).click();
+        transferAgainButton
+                .shouldBe(Condition.visible)
+                .shouldBe(Condition.enabled)
+                .click();
         return this;
     }
 
@@ -193,11 +189,19 @@ public class TransferPage extends BasePage<TransferPage> {
         return this;
     }
 
-    public TransferPage searchTransactionsByName(String name) {
+    public TransferPage inputName(String name) {
         searchNameField.shouldBe(Condition.visible);
+        searchNameField.shouldBe(Condition.enabled);
         searchNameField.clear();
         searchNameField.setValue(name);
-        searchButton.shouldBe(Condition.visible).click();
+        searchNameField.shouldHave(Condition.value(name));
+        return this;
+    }
+
+    public TransferPage clickSearchByNameButton() {
+        searchButton.shouldBe(Condition.visible);
+        searchButton.shouldBe(Condition.enabled);
+        searchButton.click();
         return this;
     }
 
@@ -235,7 +239,10 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage clickTransferButtonInModal() {
-        modalTransferButton.shouldBe(Condition.visible).click();
+        modalTransferButton.shouldBe(Condition.visible, Duration.ofSeconds(10))
+                .shouldBe(Condition.enabled, Duration.ofSeconds(10))
+                .shouldBe(Condition.interactable)
+                .click();
         return this;
     }
 
@@ -244,5 +251,44 @@ public class TransferPage extends BasePage<TransferPage> {
                 .enterAmountInModal(amount)
                 .checkConfirmCheckboxInModal()
                 .clickTransferButtonInModal();
+    }
+
+    /**
+     * Получить все операции в истории транзакций
+     */
+    public List<OperationsList> getAllOperations() {
+        ElementsCollection elementsCollection = $$(".list-group-item");
+        return generatePageElements(elementsCollection, OperationsList::new);
+    }
+
+    /**
+     * Найти первую операцию по типу
+     */
+    public OperationsList findFirstOperationByType(String expectedType) {
+        return getAllOperations().stream()
+                .filter(operation -> operation.getOperationType().equals(expectedType))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No operation found with type: " + expectedType));
+    }
+
+    /**
+     * Кликнуть Repeat на первой операции TRANSFER_IN
+     */
+    public TransferPage clickRepeatOnFirstTransferIn() {
+        findFirstOperationByType("TRANSFER_IN").clickRepeat();
+        return this;
+    }
+
+    /**
+     * Проверить, что операция с указанным типом существует
+     */
+    public TransferPage shouldHaveOperationType(String expectedType) {
+        boolean exists = getAllOperations().stream()
+                .anyMatch(operation -> operation.getOperationType().equals(expectedType));
+
+        if (!exists) {
+            throw new AssertionError("No operation found with type: " + expectedType);
+        }
+        return this;
     }
 }

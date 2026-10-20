@@ -31,10 +31,6 @@ public class DataProviders {
         ).limit(1);
     }
 
-    public static String validProfileName() {
-        return validProfileNames().findFirst().get();
-    }
-
     /**
      * Генерирует несколько валидных имён профиля (для тестов, где нужно больше данных)
      */

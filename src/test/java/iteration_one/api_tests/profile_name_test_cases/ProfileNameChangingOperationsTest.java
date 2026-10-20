@@ -11,6 +11,7 @@ import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import common.annotations.UserSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,8 +26,9 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
     // Данные для теста беру из метода в BaseTest
     @MethodSource("validProfileNames")
     @DisplayName("Пользователь может изменить имя профиля на имя из двух слов")
+    @UserSession
     public void userCanChangeProfileNameToTwoWordsTest(String profileName) {
-        // Данные для теста
+
         TestUserContext user = getCurrentUser();
         String token = user.getToken();
 
@@ -48,16 +50,15 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
     }
 
     @ParameterizedTest
-    // Данные для теста беру из метода в BaseTest
     @MethodSource("invalidProfileNames")
     @DisplayName("Пользователь не может изменить имя профиля, " +
             "если оно не соответствует формату 'Слово пробел Слово'")
+    @UserSession
     public void userCannotChangeProfileNameNotMatchingTwoWordsFormatTest(String profileName) {
-        // Данные для теста
-        TestUserContext user = getCurrentUser();
-        String token = user.getToken();
 
+        TestUserContext user = getCurrentUser();
         String profileNameBefore = UserSteps.getProfileName(user);
+        String token = user.getToken();
 
         UpdateCustomerProfileRequest request = UpdateCustomerProfileRequest
                 .builder()
@@ -72,6 +73,7 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
 
         String profileNameAfter = UserSteps.getProfileName(user);
+        ;
         softly.assertThat(profileNameAfter)
                 .as("Profile name should not be updated")
                 .isEqualTo(profileNameBefore);

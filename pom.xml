@@ -61,6 +61,11 @@
             <artifactId>selenide</artifactId>
             <version>7.9.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>selenide-video-recorder</artifactId>
+            <version>7.9.2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -80,6 +85,11 @@
                     </annotationProcessorPaths>
                     <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M7</version>
             </plugin>
         </plugins>
     </build>

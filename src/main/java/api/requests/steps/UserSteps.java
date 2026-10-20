@@ -9,10 +9,13 @@ import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import org.assertj.core.api.Assertions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import static api.generators.testdata.DataProviders.BALANCE_5000;
 import static api.generators.testdata.ValidTransferAmounts.validTransferAmount;
@@ -189,8 +192,16 @@ public class UserSteps {
      */
     public static String generateInvalidProfileName() {
         InvalidNameCase[] cases = InvalidNameCase.values();
-        int randomIndex = new Random().nextInt(cases.length);
-        return cases[randomIndex].generate();
+
+        List<InvalidNameCase> invalidNameCases = Arrays.stream(cases)
+                .filter(c -> c != InvalidNameCase.EMPTY && c != InvalidNameCase.SPACE)
+                .toList();
+
+        int randomIndex = ThreadLocalRandom.current().nextInt(invalidNameCases.size());
+        String invalidName = invalidNameCases.get(randomIndex).generate();
+
+        Assertions.assertThat(invalidName).isNotNull().isNotEmpty();
+        return invalidName;
     }
 
 

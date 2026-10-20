@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class Config {
-    private final static Config INSTANSE = new Config();
+    private static final  Config INSTANCE = new Config();
     private final Properties properties = new Properties();
 
     private Config() {
@@ -20,6 +20,10 @@ public class Config {
     }
 
     public static String getProperty(String key) {
-        return INSTANSE.properties.getProperty(key);
+        return INSTANCE.properties.getProperty(key);
+    }
+
+    public static String getTestEnvironment() {
+        return getProperty("test.environment");
     }
 }

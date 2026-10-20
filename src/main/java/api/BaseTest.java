@@ -3,15 +3,23 @@ package api;
 import api.generators.testdata.DataProviders;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
+import common.extensions.AdminSessionExtension;
+import common.extensions.BrowserMatchExtension;
+import common.extensions.EnvironmentMatchExtension;
+import common.extensions.UserSessionExtension;
 import lombok.Setter;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
+@ExtendWith(AdminSessionExtension.class)
+@ExtendWith(UserSessionExtension.class)
+@ExtendWith(BrowserMatchExtension.class)
+@ExtendWith(EnvironmentMatchExtension.class)
 public class BaseTest extends DataProviders {
 
     public static final Long NON_EXISTENT_ACCOUNT_ID = 9999999L;
@@ -31,7 +39,7 @@ public class BaseTest extends DataProviders {
         // Создаем пользователя только для API тестов (если еще не создан)
         // Для UI тестов пользователь создается в BaseUiTest.setUpUser()
         if (getCurrentUser() == null && !isUiTest()) {
-            TestUserContext user = UserSteps.createUserWithAccounts("ApiTest", "USER", 2);
+            TestUserContext user = UserSteps.createUserWithAccounts("API", "USER", 2);
             setCurrentUser(user);
             System.out.println("✅ API Test user created: " + user.getDisplayName());
         }
@@ -54,7 +62,6 @@ public class BaseTest extends DataProviders {
         // Очищаем пользователей, созданных в тесте
         UserSteps.cleanupTestUsers();
     }
-
 
     // ========== Публичные методы для доступа к контексту ==========
 

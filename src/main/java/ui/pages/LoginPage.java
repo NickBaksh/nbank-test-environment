@@ -6,10 +6,6 @@ import com.codeborne.selenide.SelenideElement;
 import static com.codeborne.selenide.Selenide.$;
 
 public class LoginPage extends BasePage<LoginPage> {
-    private SelenideElement usernameInput = $(Selectors.byAttribute("placeholder", "Username"));
-    private SelenideElement passwordInput = $(Selectors.byAttribute("placeholder", "Password"));
-    private SelenideElement button = $("button");
-
     @Override
     public String url() {
         return "/login";
