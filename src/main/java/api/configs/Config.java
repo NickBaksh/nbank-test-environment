@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class Config {
-    private static final  Config INSTANCE = new Config();
+    private static final Config INSTANCE = new Config();
     private final Properties properties = new Properties();
 
     private Config() {
@@ -25,5 +25,99 @@ public class Config {
 
     public static String getTestEnvironment() {
         return getProperty("test.environment");
+    }
+
+    public static String getProperty(String key, String defaultValue) {
+        String value = INSTANCE.properties.getProperty(key);
+        return value != null ? value : defaultValue;
+    }
+
+    public static String getApiVersion() {
+        String version = getProperty("apiVersion");
+        return parseApiVersion(version);
+    }
+
+    private static String parseApiVersion(String version) {
+        if (version == null || version.isEmpty()) {
+            throw new RuntimeException("api.version is not configured in config.properties!");
+        }
+
+        version = version.trim();
+
+        if (version.contains("/")) {
+            String[] parts = version.split("/");
+            for (int i = parts.length - 1; i >= 0; i--) {
+                if (!parts[i].isEmpty()) {
+                    version = parts[i];
+                    break;
+                }
+            }
+        }
+
+        if (version.startsWith("api") && version.length() > 3) {
+            version = version.substring(3);
+        }
+
+        if (!version.startsWith("v") && version.matches("\\d.*")) {
+            version = "v" + version;
+        }
+
+        if (version.isEmpty()) {
+            throw new RuntimeException(
+                    "❌ Failed to parse api.version: '" +
+                            getProperty("apiVersion") +
+                            "' is invalid format"
+            );
+        }
+
+        return version;
+    }
+
+    /**
+     * Получить URL для подключения к БД.
+     * Приоритет: System Property > config.properties > дефолт
+     */
+    public static String getDbUrl() {
+        String url = System.getProperty("db.url");
+        if (url != null && !url.isEmpty()) {
+            return url;
+        }
+        return getProperty("db.url", "jdbc:postgresql://localhost:5433/nbank");
+    }
+
+    /**
+     * Получить имя пользователя БД.
+     * Приоритет: System Property > config.properties > дефолт
+     */
+    public static String getDbUser() {
+        String user = System.getProperty("db.user");
+        if (user != null && !user.isEmpty()) {
+            return user;
+        }
+        return getProperty("db.user", "postgres");
+    }
+
+    /**
+     * Получить пароль для БД.
+     * Приоритет: System Property > config.properties > дефолт
+     */
+    public static String getDbPassword() {
+        String password = System.getProperty("db.password");
+        if (password != null && !password.isEmpty()) {
+            return password;
+        }
+        return getProperty("db.password", "postgres");
+    }
+
+    /**
+     * Получить базовый URL для API.
+     * Приоритет: System Property > config.properties > дефолт
+     */
+    public static String getApiBaseUrl() {
+        String url = System.getProperty("apiBaseUrl");
+        if (url != null && !url.isEmpty()) {
+            return url;
+        }
+        return getProperty("apiBaseUrl", "http://localhost:4111");
     }
 }

@@ -1,7 +1,7 @@
 package api.specs;
 
 import api.configs.Config;
-import api.models.LoginUserRequest;
+import api.models.dto_model.LoginUserRequest;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import io.restassured.builder.RequestSpecBuilder;
@@ -22,7 +22,7 @@ public class RequestSpecs {
                 .setAccept(ContentType.JSON)
                 .addFilters(List.of(new RequestLoggingFilter(),
                         new ResponseLoggingFilter()))
-                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiVersion"));
+                .setBaseUri(Config.getProperty("apiBaseUrl") + Config.getProperty("apiPath") + Config.getProperty("apiVersion"));
     }
 
     public static RequestSpecification unauthSpec() {

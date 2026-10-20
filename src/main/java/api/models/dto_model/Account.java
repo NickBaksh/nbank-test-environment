@@ -1,5 +1,6 @@
-package api.models;
+package api.models.dto_model;
 
+import api.models.BaseModel;
 import lombok.*;
 
 import java.util.List;
@@ -9,9 +10,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class DepositResponse extends BaseModel {
+public class Account extends BaseModel {
     private Long id;
     private String accountNumber;
     private double balance;
     private List<Transaction> transactions;
 }
+

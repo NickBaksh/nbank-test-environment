@@ -1,6 +1,7 @@
-package api.models;
+package api.models.dto_model;
 
 import api.generators.GeneratingRule;
+import api.models.BaseModel;
 import lombok.*;
 
 @EqualsAndHashCode(callSuper = true)

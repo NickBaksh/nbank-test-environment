@@ -1,10 +1,10 @@
 package api.requests.steps;
 
 import api.generators.RandomModelGenerator;
-import api.models.CreateUserRequest;
-import api.models.CreateUserResponse;
-import api.models.Customer;
-import api.models.GetAllUsersResponse;
+import api.models.dto_model.CreateUserRequest;
+import api.models.dto_model.CreateUserResponse;
+import api.models.dto_model.Customer;
+import api.models.dto_model.GetAllUsersResponse;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;

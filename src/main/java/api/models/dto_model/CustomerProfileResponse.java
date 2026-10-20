@@ -1,5 +1,6 @@
-package api.models;
+package api.models.dto_model;
 
+import api.models.BaseModel;
 import lombok.*;
 
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Customer extends BaseModel {
+public class CustomerProfileResponse extends BaseModel {
     private Long id;
     private String username;
     private String password;

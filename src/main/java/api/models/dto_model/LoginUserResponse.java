@@ -1,5 +1,7 @@
-package api.models;
+package api.models.dto_model;
 
+import api.models.BaseModel;
+import api.models.UserRole;
 import lombok.*;
 
 @EqualsAndHashCode(callSuper = true)

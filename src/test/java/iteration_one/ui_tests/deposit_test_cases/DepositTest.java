@@ -2,16 +2,15 @@ package iteration_one.ui_tests.deposit_test_cases;
 
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
+import common.annotations.ApiVersion;
 import common.annotations.Browsers;
 import common.annotations.Environments;
 import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.selenide.videorecorder.junit5.VideoRecorderExtension;
 import ui.pages.UserDashboard;
 
 import static api.generators.testdata.ValidDepositAmounts.validDepositAmount;
@@ -26,8 +25,9 @@ public class DepositTest extends BaseUiTest {
     @UserSession
     @Environments
     @Browsers
-    @DisplayName("Пополнение счета через UI на валидную сумму")
-    public void userCanDepositMoneyTest() {
+    @DisplayName("Пополнение счета через UI на валидную сумму. Тест для API V2")
+    @ApiVersion("v2")
+    public void userCanDepositMoneyApiV2Test() {
         // Данные для теста
         TestUserContext user = getCurrentUser();
 
@@ -48,7 +48,42 @@ public class DepositTest extends BaseUiTest {
                 .goToDepositMoneyPage()
                 .shouldHaveTitle(DEPOSIT_MONEY_TEXT)
                 .makeDeposit(accountId, depositAmount)
-                .verifySuccessfulDepositAlert(depositAmount, accountId);
+                .verifySuccessfulDepositByAccountId(depositAmount, accountId);
+
+        // ШАГ 3: Проверить, что счёт клиента пополнился на сумму депозита
+        double accountBalanceAfter = UserSteps.getFirstAccountBalance(user);
+        double expectedBalance = accountBalanceBefore + depositAmount;
+        assertThat(accountBalanceAfter).isEqualTo(expectedBalance);
+    }
+
+    @Test
+    @UserSession
+    @Environments
+    @Browsers
+    @DisplayName("Пополнение счета через UI на валидную сумму. Для версии API V1")
+    public void userCanDepositMoneyApiV1Test() {
+        // Данные для теста
+        TestUserContext user = getCurrentUser();
+
+        String token = user.getToken();
+        String expectedUsername = user.getUsername();
+        double accountBalanceBefore = UserSteps.getFirstAccountBalance(user);
+        long accountId = user.getFirstAccountId();
+        String accountNumber = user.getAccountNumber(accountId);
+        double depositAmount = validDepositAmount();
+
+        // ШАГ 1: Авторизоваться под учетной записью пользователя
+        authWithToken(token);
+
+        // ШАГ 2: Выполнить шаги теста
+        new UserDashboard()
+                .open()
+                .shouldHaveWelcomeText(WELCOME_TEXT_DEFAULT)
+                .shouldHaveUsername(expectedUsername)
+                .goToDepositMoneyPage()
+                .shouldHaveTitle(DEPOSIT_MONEY_TEXT)
+                .makeDeposit(accountId, depositAmount)
+                .verifySuccessfulDepositByAccountNumber(depositAmount, accountNumber);
 
         // ШАГ 3: Проверить, что счёт клиента пополнился на сумму депозита
         double accountBalanceAfter = UserSteps.getFirstAccountBalance(user);
@@ -87,7 +122,7 @@ public class DepositTest extends BaseUiTest {
 
         // ШАГ 3: Проверить, что сумма на счёте клиента не изменилась
         double accountBalanceAfter = UserSteps.getFirstAccountBalance(user);
-        ;
+
         assertThat(accountBalanceAfter).isEqualTo(accountBalanceBefore);
     }
 
@@ -175,7 +210,6 @@ public class DepositTest extends BaseUiTest {
         String token = user.getToken();
         String expectedUsername = user.getUsername();
         double accountBalanceBefore = UserSteps.getFirstAccountBalance(user);
-        long accountId = user.getFirstAccountId();
 
         // ШАГ 1: Авторизоваться под учетной записью пользователя
         authWithToken(token);
@@ -191,6 +225,7 @@ public class DepositTest extends BaseUiTest {
                 .shouldHaveEmptyAmountField()
                 .clickDepositButton()
                 .verifyAlertAndAccept(PLEASE_SELECT_AN_ACCOUNT.getMessage());
+
 
         // ШАГ 3: Проверить, что сумма на счёте клиента не изменилась
         double accountBalanceAfter = UserSteps.getFirstAccountBalance(user);

@@ -1,16 +1,18 @@
 package iteration_one.api_tests.transactions_test_cases;
 
 import api.BaseTest;
-import api.models.TransferRequest;
-import api.models.TransferResponse;
+import api.models.dto_model.TransferRequest;
+import api.models.dto_model.TransferResponse;
 import api.models.comparison.ModelAssertions;
 import api.requests.skelethon.Endpoint;
 import api.requests.skelethon.requesters.CrudRequester;
 import api.requests.skelethon.requesters.ValidatedCrudRequester;
+import api.requests.steps.DataBaseSteps;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
 import api.specs.RequestSpecs;
 import api.specs.ResponseSpecs;
+import common.annotations.ApiVersion;
 import common.annotations.UserSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,13 +79,17 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should increase by 1")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyTransferSaved(softly, firstAccountId, secondAccountId,
+                firstAccountBalanceExpected, secondAccountBalanceExpected, amount);
     }
 
     @ParameterizedTest
-    @MethodSource("invalidTransferAmountsApi")
-    @DisplayName("Проверка невозможности отправки невалидной суммы")
+    @MethodSource("invalidTransferAmountsApiV2")
+    @DisplayName("Проверка невозможности отправки невалидной суммы. Тест для API v2")
     @UserSession
-    public void userCannotTransferInvalidSumToAnotherAccountTest(double amount, String expectedError) {
+    @ApiVersion("v2")
+    public void userCannotTransferInvalidSumToAnotherAccountApiV2Test(double amount, String expectedError) {
         TestUserContext user = getCurrentUser();
         UserSteps.setUpBalance(user);
 
@@ -132,6 +138,72 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("invalidTransferAmountsApiV1")
+    @DisplayName("Проверка невозможности отправки невалидной суммы. Тест для API v1")
+    @UserSession
+    public void userCannotTransferInvalidSumToAnotherAccountApiV1Test(double amount, String expectedError) {
+        TestUserContext user = getCurrentUser();
+        UserSteps.setUpBalance(user);
+
+        String token = user.getToken();
+        long firstAccountId = user.getFirstAccountId();
+        long secondAccountId = user.getSecondAccountId();
+
+        double firstAccountBalanceExpected = UserSteps.getFirstAccountBalance(user);
+        int firstAccountTransactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
+
+        double secondAccountBalanceExpected = UserSteps.getSecondAccountBalance(user);
+        int secondAccountTransactionsCountExpected = UserSteps.getSecondAccountTransactionsCount(user);
+
+
+        TransferRequest request = TransferRequest.builder()
+                .senderAccountId(firstAccountId)
+                .receiverAccountId(secondAccountId)
+                .amount(amount)
+                .build();
+
+        new CrudRequester(
+                RequestSpecs.authWithTokenSpec(token),
+                ResponseSpecs.returnsBadRequest(),
+                Endpoint.ACCOUNTS_TRANSFER)
+                .create(request)
+                .body(equalTo(expectedError));
+
+        double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
+        int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
+
+        double secondAccountBalanceActual = UserSteps.getSecondAccountBalance(user);
+        int secondAccountTransactionsCountActual = UserSteps.getSecondAccountTransactionsCount(user);
+
+        softly.assertThat(firstAccountBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(firstAccountBalanceExpected);
+
+        softly.assertThat(firstAccountTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(firstAccountTransactionsCountExpected);
+
+        softly.assertThat(secondAccountBalanceActual)
+                .as("Balance should not decrease")
+                .isEqualTo(secondAccountBalanceExpected);
+
+        softly.assertThat(secondAccountTransactionsCountActual)
+                .as("Transaction count should not increase")
+                .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
     @Test
@@ -186,6 +258,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
 
@@ -226,6 +303,9 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(firstAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(firstAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
     }
 
     @Test
@@ -277,6 +357,11 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(secondAccountTransactionsCountActual)
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
     }
 
     @Test
@@ -317,5 +402,8 @@ public class TransactionOperationsTest extends BaseTest {
         softly.assertThat(firstAccountTransactionsCountActual)
                 .as("Transaction count should increase by 2")
                 .isEqualTo(firstAccountTransactionsCountExpected);
+
+        DataBaseSteps.verifySameAccountTransferSaved(softly, firstAccountId,
+                firstAccountBalanceExpected, TRANSACTION_100);
     }
 }

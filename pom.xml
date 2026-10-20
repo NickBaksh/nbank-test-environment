@@ -13,6 +13,11 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.11.4</junit.version>
+        <apiBaseUrl>http://localhost:4111</apiBaseUrl>
+        <db.url>jdbc:postgresql://localhost:5433/nbank</db.url>
+        <db.user>postgres</db.user>
+        <db.password>postgres</db.password>
+        <test.environment>stage</test.environment>
     </properties>
 
     <dependencies>
@@ -66,6 +71,33 @@
             <artifactId>selenide-video-recorder</artifactId>
             <version>7.9.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbutils</groupId>
+            <artifactId>commons-dbutils</artifactId>
+            <version>1.8.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-java-commons</artifactId>
+            <version>2.29.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit5</artifactId>
+            <version>2.29.0</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -90,6 +122,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M7</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <apiBaseUrl>${apiBaseUrl}</apiBaseUrl>
+                        <db.url>${db.url}</db.url>
+                        <db.user>${db.user}</db.user>
+                        <db.password>${db.password}</db.password>
+                        <test.environment>${test.environment}</test.environment>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

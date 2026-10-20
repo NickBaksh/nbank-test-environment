@@ -48,7 +48,6 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
             nameField.sendKeys(name);
             nameField.shouldHave(Condition.value(name));
         }
-
         return this;
     }
 
