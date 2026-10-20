@@ -14,7 +14,7 @@ services:
       postgres:
         condition: service_healthy
       wiremock:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - nbank-network
