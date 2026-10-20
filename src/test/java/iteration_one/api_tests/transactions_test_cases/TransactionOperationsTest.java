@@ -1,6 +1,7 @@
 package iteration_one.api_tests.transactions_test_cases;
 
 import api.BaseTest;
+import api.configs.Config;
 import api.models.dto_model.TransferRequest;
 import api.models.dto_model.TransferResponse;
 import api.models.comparison.ModelAssertions;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import static api.constants.JsonFields.MESSAGE;
 
 import static api.generators.testdata.DataProviders.*;
 import static api.generators.testdata.InvalidTransferCase.INSUFFICIENT_FUNDS;
@@ -82,8 +82,10 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should increase by 1")
                 .isEqualTo(secondAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyTransferSaved(softly, firstAccountId, secondAccountId,
-                firstAccountBalanceExpected, secondAccountBalanceExpected, amount);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyTransferSaved(softly, firstAccountId, secondAccountId,
+                    firstAccountBalanceExpected, secondAccountBalanceExpected, amount);
+        }
     }
 
     @ParameterizedTest
@@ -141,15 +143,17 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
-                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
-        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
-                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                    firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+            DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                    secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        }
     }
 
 
     @ParameterizedTest
-    @MethodSource("invalidTransferAmountsApiV1")
+    @MethodSource("invalidTransferAmountsApiV2")
     @DisplayName("Проверка невозможности отправки невалидной суммы. Тест для API v1")
     @UserSession
     public void userCannotTransferInvalidSumToAnotherAccountApiV1Test(double amount, String expectedError) {
@@ -178,7 +182,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(MESSAGE, equalTo(expectedError));
+                .body(equalTo(expectedError));
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
         int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
@@ -202,10 +206,12 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
-                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
-        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
-                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                    firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+            DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                    secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        }
     }
 
     @Test
@@ -237,7 +243,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(MESSAGE, equalTo(INSUFFICIENT_FUNDS_ERROR));
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
         int firstAccountTransactionsCountActual = UserSteps.getFirstAccountTransactionsCount(user);
@@ -261,10 +267,12 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
-                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
-        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
-                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                    firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+            DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                    secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        }
     }
 
 
@@ -291,7 +299,7 @@ public class TransactionOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_TRANSFER)
                 .create(request)
-                .body(MESSAGE,equalTo(INSUFFICIENT_FUNDS_ERROR));
+                .body(equalTo(INSUFFICIENT_FUNDS_ERROR));
 
 
         double firstAccountBalanceActual = UserSteps.getFirstAccountBalance(user);
@@ -306,8 +314,10 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should not increase")
                 .isEqualTo(firstAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
-                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                    firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+        }
     }
 
     @Test
@@ -360,10 +370,12 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should not increase")
                 .isEqualTo(secondAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
-                firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
-        DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
-                secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifyAccountUnchanged(softly, firstAccountId,
+                    firstAccountBalanceExpected, firstAccountTransactionsCountExpected);
+            DataBaseSteps.verifyAccountUnchanged(softly, secondAccountId,
+                    secondAccountBalanceExpected, secondAccountTransactionsCountExpected);
+        }
     }
 
     @Test
@@ -405,7 +417,9 @@ public class TransactionOperationsTest extends BaseTest {
                 .as("Transaction count should increase by 2")
                 .isEqualTo(firstAccountTransactionsCountExpected);
 
-        DataBaseSteps.verifySameAccountTransferSaved(softly, firstAccountId,
-                firstAccountBalanceExpected, TRANSACTION_100);
+        if (Config.isDbChecksEnabled()) {
+            DataBaseSteps.verifySameAccountTransferSaved(softly, firstAccountId,
+                    firstAccountBalanceExpected, TRANSACTION_100);
+        }
     }
 }

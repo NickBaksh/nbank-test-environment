@@ -6,7 +6,6 @@ import api.requests.steps.UserSteps;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
-import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,12 +16,11 @@ import static com.codeborne.selenide.Selenide.open;
 
 public class BaseUiTest extends BaseTest {
 
-    private TestUserContext currentUser;
-
     protected static final String WELCOME_TEXT_DEFAULT = "Welcome, noname!";
     protected static final String DEPOSIT_MONEY_TEXT = "💰 Deposit Money";
     protected static final String EDIT_PROFILE_TEXT = "✏️ Edit Profile";
     protected static final String SAVE_CHANGES_TEXT = "💾 Save Changes";
+    private TestUserContext currentUser;
 
     @BeforeAll
     public static void setupSelenoid() {
@@ -43,7 +41,7 @@ public class BaseUiTest extends BaseTest {
     }
 
     @BeforeEach
-    public void setUp() {
+    public void setUpBrowser() {
         if (WebDriverRunner.hasWebDriverStarted()) {
             Selenide.closeWebDriver();
         }
@@ -66,11 +64,6 @@ public class BaseUiTest extends BaseTest {
 
         if (WebDriverRunner.hasWebDriverStarted()) {
             Selenide.closeWebDriver();
-            try {
-                WebDriverRunner.getWebDriver().quit();
-            } catch (Exception e) {
-                System.out.println("WebDriver already closed");
-            }
         }
     }
 }

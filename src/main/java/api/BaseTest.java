@@ -34,14 +34,19 @@ public class BaseTest {
     @AfterEach
     public void afterTest() {
         try {
-            // Очищаем всех пользователей, созданных в тесте
-            UserSteps.cleanupTestUsers();
-        } catch (Exception e) {
-            System.err.println("Error during cleanup: " + e.getMessage());
+            if (softly != null) {
+                softly.assertAll();
+            }
+        } finally {
+            try {
+                UserSteps.cleanupTestUsers();
+            } catch (Exception e) {
+                System.err.println("Error during cleanup: " + e.getMessage());
+            }
+            users = null;
+            currentUser = null;
+            softly = null;
         }
-        users = null;
-        currentUser = null;
-        softly = null;
     }
 
 
@@ -55,6 +60,10 @@ public class BaseTest {
 
     public static Stream<Arguments> invalidTransferAmountsApiV2() {
         return DataProviders.invalidTransferAmountsApiV2();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV3() {
+        return DataProviders.invalidTransferAmountsApiV3();
     }
 
     public static Stream<Double> validDepositAmounts() {

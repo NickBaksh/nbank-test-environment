@@ -4,6 +4,7 @@ import api.models.dto_model.FraudCheckResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import api.configs.Config;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import common.annotations.FraudCheckMock;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -18,6 +19,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 public class FraudCheckMockExtension implements BeforeEachCallback, AfterEachCallback {
+
+    /**
+     * Явный клиент к админке WireMock.
+     * Статические stubFor()/reset() используют клиент из ThreadLocal, который по умолчанию
+     * смотрит на localhost:8080 — в Docker это сам контейнер, а не ваш компьютер.
+     */
+    private static final WireMock WIRE_MOCK = new WireMock(
+            Config.getWireMockHost(),
+            Config.getWireMockPort()
+    );
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -65,52 +76,64 @@ public class FraudCheckMockExtension implements BeforeEachCallback, AfterEachCal
 
     private void setupFraudCheckMock(FraudCheckMock annotation) {
         try {
-            // ========== 1. Настройка ошибок ==========
-
-            // 1.1 Симуляция таймаута
             if (annotation.simulateTimeout()) {
-                stubFor(get(urlPathEqualTo("/events"))
+                WIRE_MOCK.register(post(urlPathEqualTo("/fraud-check"))
                         .willReturn(aResponse()
                                 .withStatus(200)
-                                .withFixedDelay(10000) // 10 секунд задержки (таймаут)
+                                .withFixedDelay(10000)
+                        )
+                );
+                WIRE_MOCK.register(get(urlPathEqualTo("/events"))
+                        .willReturn(aResponse()
+                                .withStatus(200)
+                                .withFixedDelay(10000)
                         )
                 );
                 System.out.println("⚠️ WireMock configured with TIMEOUT simulation (10s delay)");
-                return; // Не настраиваем успешный ответ
+                return;
             }
 
-            // 1.2 Симуляция ошибки соединения
             if (annotation.simulateConnectionError()) {
-                stubFor(get(urlPathEqualTo("/events"))
+                WIRE_MOCK.register(post(urlPathEqualTo("/fraud-check"))
+                        .willReturn(aResponse()
+                                .withStatus(503)
+                                .withBody("Service Unavailable")
+                        )
+                );
+                WIRE_MOCK.register(get(urlPathEqualTo("/events"))
                         .willReturn(aResponse()
                                 .withStatus(503)
                                 .withBody("Service Unavailable")
                         )
                 );
                 System.out.println("⚠️ WireMock configured with CONNECTION ERROR simulation (503)");
-                return; // Не настраиваем успешный ответ
+                return;
             }
 
-            // 1.3 Симуляция HTTP ошибки
             if (annotation.errorHttpStatus() > 0) {
-                stubFor(get(urlPathEqualTo("/events"))
+                int status = annotation.errorHttpStatus();
+                WIRE_MOCK.register(post(urlPathEqualTo("/fraud-check"))
                         .willReturn(aResponse()
-                                .withStatus(annotation.errorHttpStatus())
+                                .withStatus(status)
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\"error\": \"Service error\"}")
                         )
                 );
-                System.out.println("⚠️ WireMock configured with HTTP ERROR: " + annotation.errorHttpStatus());
-                return; // Не настраиваем успешный ответ
+                WIRE_MOCK.register(get(urlPathEqualTo("/events"))
+                        .willReturn(aResponse()
+                                .withStatus(status)
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\"error\": \"Service error\"}")
+                        )
+                );
+                System.out.println("⚠️ WireMock configured with HTTP ERROR: " + status);
+                return;
             }
-
-            // ========== 2. Успешный ответ (по умолчанию) ==========
 
             FraudCheckResponse response = createFraudCheckResponse(annotation);
             String responseJson = objectMapper.writeValueAsString(response);
 
-            // 2.1 Основная заглушка для /events
-            stubFor(get(urlPathEqualTo("/events"))
+            WIRE_MOCK.register(get(urlPathEqualTo("/events"))
                     .willReturn(aResponse()
                             .withStatus(annotation.httpStatus())
                             .withHeader("Content-Type", "application/json")
@@ -119,8 +142,7 @@ public class FraudCheckMockExtension implements BeforeEachCallback, AfterEachCal
                     )
             );
 
-            // 2.2 Для обратной совместимости - POST /fraud-check
-            stubFor(post(urlPathEqualTo("/fraud-check"))
+            WIRE_MOCK.register(post(urlPathEqualTo("/fraud-check"))
                     .willReturn(aResponse()
                             .withStatus(annotation.httpStatus())
                             .withHeader("Content-Type", "application/json")
@@ -156,7 +178,7 @@ public class FraudCheckMockExtension implements BeforeEachCallback, AfterEachCal
         long threadId = Thread.currentThread().threadId();
 
         try {
-            WireMock.reset();
+            WIRE_MOCK.resetMappings();
             System.out.println("WireMock fully reset for thread: " + threadId);
         } catch (Exception e) {
             System.err.println("Error during WireMock reset: " + e.getMessage());

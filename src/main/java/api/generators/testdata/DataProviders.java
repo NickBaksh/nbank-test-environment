@@ -141,6 +141,14 @@ public class DataProviders {
         );
     }
 
+    public static Stream<Arguments> invalidTransferAmountsApiV1() {
+        return Stream.of(
+                Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_2),
+                Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_2),
+                Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
+        );
+    }
+
     public static Stream<Arguments> invalidTransferAmountsApiV2() {
         return Stream.of(
                 Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR),
@@ -149,7 +157,7 @@ public class DataProviders {
         );
     }
 
-    public static Stream<Arguments> invalidTransferAmountsApiV1() {
+    public static Stream<Arguments> invalidTransferAmountsApiV3() {
         return Stream.of(
                 Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_3),
                 Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_3),

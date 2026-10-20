@@ -33,10 +33,13 @@ import static api.generators.testdata.InvalidTransferCase.INSUFFICIENT_FUNDS;
 import static api.specs.ResponseSpecs.INSUFFICIENT_FUNDS_ERROR_V2;
 import static api.specs.ResponseSpecs.TRANSFER_AMOUNT_MIN_ERROR_V_3;
 import static org.hamcrest.Matchers.equalTo;
+import org.junit.jupiter.api.condition.EnabledIf;
 
+@EnabledIf(value = "api.configs.Config#isFraudCheckEnabled",
+        disabledReason = "Fraud check недоступен на этом окружении")
 @ExtendWith({TimingExtension.class, FraudCheckMockExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
-public class TransferWithFraudCheckTest extends BaseTest {
+public class TransferWithFraudCheckTest extends BaseTest{
     @BeforeEach
     public void setupTest() {
         this.softly = new SoftAssertions();
@@ -380,7 +383,7 @@ public class TransferWithFraudCheckTest extends BaseTest {
 
 
     @ParameterizedTest
-    @MethodSource("invalidTransferAmountsApiV1")
+    @MethodSource("invalidTransferAmountsApiV3")
     @UserSession(users = 2, accounts = 1)
     @FraudCheckMock(
             status = "SUCCESS",
