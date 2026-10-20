@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static api.generators.testdata.DataProviders.NON_EXISTENT_ACCOUNT_ID;
 import static api.specs.ResponseSpecs.UNAUTHORIZED_ACCESS_ERROR;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -46,8 +47,8 @@ public class DepositOperationsTest extends BaseTest {
 
         // Пробую положить на аккаунт невалидную сумму
         DepositRequest request = DepositRequest.builder()
-                .id(user.getFirstAccountId())
-                .balance(amount)
+                .accountId(user.getFirstAccountId())
+                .amount(amount)
                 .build();
 
         new CrudRequester(
@@ -91,8 +92,8 @@ public class DepositOperationsTest extends BaseTest {
 
         // Пробую положить на аккаунт невалидную сумму
         DepositRequest request = DepositRequest.builder()
-                .id(user.getFirstAccountId())
-                .balance(amount)
+                .accountId(user.getFirstAccountId())
+                .amount(amount)
                 .build();
 
         new CrudRequester(
@@ -131,8 +132,8 @@ public class DepositOperationsTest extends BaseTest {
         int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user) + 1;
 
         DepositRequest request = DepositRequest.builder()
-                .id(accountId)
-                .balance(deposit)
+                .accountId(accountId)
+                .amount(deposit)
                 .build();
 
         DepositResponse response = new ValidatedCrudRequester<DepositResponse>(
@@ -169,7 +170,7 @@ public class DepositOperationsTest extends BaseTest {
         int transactionsCountExpected = UserSteps.getFirstAccountTransactionsCount(user);
 
         DepositRequest request = RandomModelGenerator.generateWithBuilder(DepositRequest.class);
-        request.setId(NON_EXISTENT_ACCOUNT_ID);
+        request.setAccountId(NON_EXISTENT_ACCOUNT_ID);
 
         new CrudRequester(
                 RequestSpecs.authWithTokenSpec(token),

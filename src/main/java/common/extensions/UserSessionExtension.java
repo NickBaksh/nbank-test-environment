@@ -7,6 +7,9 @@ import common.annotations.UserSession;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class UserSessionExtension implements BeforeEachCallback {
 
     @Override
@@ -16,21 +19,31 @@ public class UserSessionExtension implements BeforeEachCallback {
                 .getAnnotation(UserSession.class);
 
         if (annotation != null && annotation.create()) {
-            // Получаем экземпляр теста
             BaseTest testInstance = (BaseTest) extensionContext.getRequiredTestInstance();
 
-            // Создаём пользователя с аккаунтами через API
-            TestUserContext userContext = UserSteps.createUserWithAccounts(
-                    annotation.prefix(),
-                    annotation.role(),
-                    annotation.accounts()
-            );
+            int numberOfUsers = annotation.users();
+            int numberOfAccounts = annotation.accounts();
+            String role = annotation.role();
+            String prefix = annotation.prefix();
 
-            // Сохраняем пользователя в контекст теста
-            testInstance.setCurrentUser(userContext);
+            List<TestUserContext> users = new ArrayList<>();
 
-            System.out.println("🔐 User created via API for thread " +
-                    Thread.currentThread().getName() + ": " + userContext.getDisplayName());
+            for (int i = 0; i < numberOfUsers; i++) {
+                String userPrefix = numberOfUsers > 1 ? prefix + "_" + (i + 1) : prefix;
+                TestUserContext userContext = UserSteps.createUserWithAccounts(
+                        userPrefix,
+                        role,
+                        numberOfAccounts
+                );
+                users.add(userContext);
+                System.out.println("🔐 User " + (i + 1) + " created: " + userContext.getDisplayName());
+            }
+
+            // Сохраняем пользователей в тест
+            testInstance.setUsers(users);
+            if (!users.isEmpty()) {
+                testInstance.setCurrentUser(users.get(0));
+            }
         }
     }
 }

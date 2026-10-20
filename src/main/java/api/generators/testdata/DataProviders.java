@@ -23,6 +23,14 @@ public class DataProviders {
     public static final Double TRANSACTION_10000_0_1 = 10000.01;
     public static final Double BALANCE_5000 = 5000.00;
 
+    public static final Long NON_EXISTENT_ACCOUNT_ID = 99999999999999L;
+
+    public static final Double FRAUD_RISK_SCORE_0_1 = 0.1;
+    public static final Double FRAUD_RISK_SCORE_0_2 = 0.2;
+    public static final Double FRAUD_RISK_SCORE_0_3 = 0.3;
+    public static final Double FRAUD_RISK_SCORE_0_4 = 0.4;
+    public static final Double FRAUD_RISK_SCORE_0_5 = 0.5;
+
     // ========== Валидные данные для профиля ==========
 
     /**
@@ -133,7 +141,7 @@ public class DataProviders {
         );
     }
 
-    static Stream<Arguments> invalidTransferAmountsApiV2() {
+    public static Stream<Arguments> invalidTransferAmountsApiV2() {
         return Stream.of(
                 Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR),
                 Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR),
@@ -141,10 +149,10 @@ public class DataProviders {
         );
     }
 
-    static Stream<Arguments> invalidTransferAmountsApiV1() {
+    public static Stream<Arguments> invalidTransferAmountsApiV1() {
         return Stream.of(
-                Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_2),
-                Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_2),
+                Arguments.of(-0.01, TRANSFER_AMOUNT_MIN_ERROR_V_3),
+                Arguments.of(0, TRANSFER_AMOUNT_MIN_ERROR_V_3),
                 Arguments.of(10000.01, TRANSFER_AMOUNT_MAX_ERROR)
         );
     }

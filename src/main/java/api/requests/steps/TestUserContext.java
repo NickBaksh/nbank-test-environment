@@ -20,71 +20,52 @@ public class TestUserContext {
     @Builder.Default
     private Map<Long, String> accounts = java.util.Collections.synchronizedMap(new LinkedHashMap<>());
 
-    // ========== Методы для обратной совместимости ==========
-
-    /**
-     * Получить список ID аккаунтов (для обратной совместимости)
-     */
     public List<Long> getAccountsIds() {
         return new ArrayList<>(accounts.keySet());
     }
 
-    /**
-     * Добавить ID аккаунта (для обратной совместимости)
-     *
-     * @deprecated Используйте {@link #addAccount(Long, String)}
-     */
     @Deprecated
     public void addAccount(Long accountId) {
         accounts.put(accountId, null);
     }
 
-    /**
-     * Добавить аккаунт с ID и номером
-     */
     public void addAccount(Long accountId, String accountNumber) {
         accounts.put(accountId, accountNumber);
     }
 
-    /**
-     * Получить номер аккаунта по ID
-     */
     public String getAccountNumber(Long accountId) {
         return accounts.get(accountId);
     }
 
-    /**
-     * Проверить, есть ли у аккаунта номер
-     */
     public boolean hasAccountNumber(Long accountId) {
         String number = accounts.get(accountId);
         return number != null && !number.isEmpty();
     }
 
-
-    // Удобные методы
     public Long getFirstAccountId() {
-        if (accounts.size() < 2) {
-            throw new IllegalStateException("User [" + username + "] has less than 2 accounts");
+        if (accounts.isEmpty()) {
+            throw new IllegalStateException("User [" + username + "] has no accounts");
         }
-        List<Long> ids = new ArrayList<>(accounts.keySet());
-        return ids.get(0);
+        return new ArrayList<>(accounts.keySet()).get(0);
     }
 
     public Long getSecondAccountId() {
         if (accounts.size() < 2) {
-            throw new IllegalStateException("User [" + username + "] has less than 2 accounts");
+            throw new IllegalStateException("User [" + username + "] has less than 2 accounts. Current: " + accounts.size());
         }
-        List<Long> ids = new ArrayList<>(accounts.keySet());
-        return ids.get(1);
+        return new ArrayList<>(accounts.keySet()).get(1);
     }
 
     public Long getAccountIdByIndex(int index) {
-        if (index >= accounts.size()) {
-            throw new IllegalStateException("User [" + username + "] has no account at index " + index);
+        if (index < 0 || index >= accounts.size()) {
+            throw new IndexOutOfBoundsException("User [" + username + "] has no account at index " + index +
+                    ". Total accounts: " + accounts.size());
         }
-        List<Long> ids = new ArrayList<>(accounts.keySet());
-        return ids.get(index);
+        return new ArrayList<>(accounts.keySet()).get(index);
+    }
+
+    public List<Long> getAllAccountIds() {
+        return new ArrayList<>(accounts.keySet());
     }
 
     public boolean hasAccounts() {
@@ -105,5 +86,29 @@ public class TestUserContext {
 
     public boolean isUser() {
         return "USER".equalsIgnoreCase(role);
+    }
+
+    public double getFirstAccountBalance() {
+        return UserSteps.getAccountBalance(this, getFirstAccountId());
+    }
+
+    public int getFirstAccountTransactionsCount() {
+        return UserSteps.getAccountTransactionsCount(this, getFirstAccountId());
+    }
+
+    public double getAccountBalance(int index) {
+        return UserSteps.getAccountBalance(this, getAccountIdByIndex(index));
+    }
+
+    public int getAccountTransactionsCount(int index) {
+        return UserSteps.getAccountTransactionsCount(this, getAccountIdByIndex(index));
+    }
+
+    public double getAccountBalanceByAccountId(Long accountId) {
+        return UserSteps.getAccountBalance(this, accountId);
+    }
+
+    public int getAccountTransactionsCountByAccountId(Long accountId) {
+        return UserSteps.getAccountTransactionsCount(this, accountId);
     }
 }

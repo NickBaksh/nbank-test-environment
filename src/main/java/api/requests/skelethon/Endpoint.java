@@ -48,6 +48,12 @@ public enum Endpoint {
             TransferResponse.class,
             null
     ),
+    ACCOUNTS_TRANSFER_WITH_FRAUD_CHECK(
+            "/accounts/transfer-with-fraud-check",
+            TransferWithFraudCheckRequest.class,
+            TransferWithFraudCheckResponse.class,
+            null
+    ),
     ACCOUNTS_TRANSACTIONS(
             "/accounts/{accountId}/transactions",
             null,  // GET запрос без body

@@ -3,168 +3,141 @@ package api;
 import api.generators.testdata.DataProviders;
 import api.requests.steps.TestUserContext;
 import api.requests.steps.UserSteps;
-import common.extensions.*;
-import lombok.Setter;
+import common.extensions.AdminSessionExtension;
+import common.extensions.UserSessionExtension;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-@ExtendWith(AdminSessionExtension.class)
-@ExtendWith(UserSessionExtension.class)
-@ExtendWith(BrowserMatchExtension.class)
-@ExtendWith(EnvironmentMatchExtension.class)
-@ExtendWith(TimingExtension.class)
-@ExtendWith(ApiVersionCondition.class)
-public class BaseTest extends DataProviders {
-
-    public static final Long NON_EXISTENT_ACCOUNT_ID = 9999999L;
-
-    private static final ThreadLocal<SoftAssertions> softlyThreadLocal = new ThreadLocal<>();
-    private static final ThreadLocal<TestContext> testContextThreadLocal = ThreadLocal.withInitial(TestContext::new);
+@ExtendWith({UserSessionExtension.class, AdminSessionExtension.class})
+public class BaseTest {
 
     protected SoftAssertions softly;
-    protected TestContext testContext;
 
-    // Конструктор для инициализации testContext
-    public BaseTest() {}
+    private TestUserContext currentUser;
+    private List<TestUserContext> users = new ArrayList<>();
 
     @BeforeEach
-    public void setupTest() {
-        this.softly = new SoftAssertions();
-        softlyThreadLocal.set(softly);
-
-        testContext = testContextThreadLocal.get();
-
-        // Создаем пользователя только для API тестов (если еще не создан)
-        // Для UI тестов пользователь создается в BaseUiTest.setUpUser()
-        if (getCurrentUser() == null && !isUiTest()) {
-            TestUserContext user = UserSteps.createUserWithAccounts("API", "USER", 2);
-            setCurrentUser(user);
-            System.out.println("✅ API Test user created for thread " +
-                    Thread.currentThread().getName() + ": " + user.getDisplayName());
+    public void setUp() {
+        softly = new SoftAssertions();
+        if (users == null) {
+            users = new ArrayList<>();
         }
-    }
-
-    private boolean isUiTest() {
-        // Проверяем, вызывается ли тест из UI пакета
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : stackTrace) {
-            if (element.getClassName().contains("iteration_one.ui_tests")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @AfterEach
     public void afterTest() {
-        if (softly != null) {
-            softly.assertAll();
-            softlyThreadLocal.remove();
+        try {
+            // Очищаем всех пользователей, созданных в тесте
+            UserSteps.cleanupTestUsers();
+        } catch (Exception e) {
+            System.err.println("Error during cleanup: " + e.getMessage());
         }
-
-        TestContext context = testContextThreadLocal.get();
-        if (context != null) {
-            // Очищаем пользователей, созданных в текущем тесте
-            UserSteps.cleanupTestUser(context.getCurrentUser());
-            for (TestUserContext additionalUser : context.getAdditionalUsers()) {
-                UserSteps.cleanupTestUser(additionalUser);
-            }
-            context.clear();
-        }
+        users = null;
+        currentUser = null;
+        softly = null;
     }
 
-    // ========== Публичные методы для доступа к контексту ==========
 
-    /**
-     * Получить текущего пользователя (потокобезопасно)
-     */
+    public static Stream<Double> validTransferAmounts() {
+        return DataProviders.validTransferAmounts();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV1() {
+        return DataProviders.invalidTransferAmountsApiV1();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsApiV2() {
+        return DataProviders.invalidTransferAmountsApiV2();
+    }
+
+    public static Stream<Double> validDepositAmounts() {
+        return DataProviders.validDepositAmounts();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsV1Api() {
+        return DataProviders.invalidDepositAmountsV1Api();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsV2Api() {
+        return DataProviders.invalidDepositAmountsV2Api();
+    }
+
+    public static Stream<String> validProfileNames() {
+        return DataProviders.validProfileNames();
+    }
+
+    public static Stream<String> invalidProfileNames() {
+        return DataProviders.invalidProfileNames();
+    }
+
+    public static Stream<Arguments> invalidProfileNamesUi() {
+        return DataProviders.invalidProfileNamesUi();
+    }
+
+    public static Stream<Arguments> invalidDepositAmountsUi() {
+        return DataProviders.invalidDepositAmountsUi();
+    }
+
+    public static Stream<Arguments> invalidTransferAmountsUi() {
+        return DataProviders.invalidTransferAmountsUi();
+    }
+
+    // ========== Getters и Setters ==========
+
     public TestUserContext getCurrentUser() {
-        TestContext context = testContextThreadLocal.get();
-        return context != null ? context.getCurrentUser() : null;
+        if (currentUser == null && users != null && !users.isEmpty()) {
+            return users.get(0);
+        }
+        return currentUser;
     }
 
-    /**
-     * Установить текущего пользователя (потокобезопасно)
-     */
-    public void setCurrentUser(TestUserContext userContext) {
-        TestContext context = testContextThreadLocal.get();
-        if (context != null) {
-            context.setCurrentUser(userContext);
+    public void setCurrentUser(TestUserContext currentUser) {
+        this.currentUser = currentUser;
+        if (currentUser != null && (users == null || users.isEmpty())) {
+            users = new ArrayList<>();
+            users.add(currentUser);
         }
     }
 
-    /**
-     * Получить токен текущего пользователя
-     */
-    public String getCurrentToken() {
-        TestUserContext user = getCurrentUser();
-        return user != null ? user.getToken() : null;
+    public List<TestUserContext> getUsers() {
+        return users != null ? users : new ArrayList<>();
     }
 
-    /**
-     * Получить первый аккаунт текущего пользователя
-     */
-    public Long getCurrentFirstAccountId() {
-        TestUserContext user = getCurrentUser();
-        return user != null ? user.getFirstAccountId() : null;
-    }
-
-    /**
-     * Получить второй аккаунт текущего пользователя
-     */
-    public Long getCurrentSecondAccountId() {
-        TestUserContext user = getCurrentUser();
-        return user != null ? user.getSecondAccountId() : null;
-    }
-
-    /**
-     * Добавить дополнительного пользователя в контекст
-     */
-    public void addAdditionalUser(TestUserContext user) {
-        TestContext context = testContextThreadLocal.get();
-        if (context != null) {
-            context.addUser(user);
+    public void setUsers(List<TestUserContext> users) {
+        this.users = users != null ? users : new ArrayList<>();
+        if (!this.users.isEmpty() && currentUser == null) {
+            this.currentUser = this.users.get(0);
         }
     }
 
-    /**
-     * Получить всех дополнительных пользователей
-     */
-    public List<TestUserContext> getAdditionalUsers() {
-        TestContext context = testContextThreadLocal.get();
-        return context != null ? context.getAdditionalUsers() : new ArrayList<>();
+    public TestUserContext getUser(int index) {
+        if (users != null && index >= 0 && index < users.size()) {
+            return users.get(index);
+        }
+        throw new IndexOutOfBoundsException("User at index " + index + " not found. Total users: " +
+                (users != null ? users.size() : 0));
     }
 
-    // Вспомогательный класс для хранения контекста теста
-    protected static class TestContext {
-        private final List<TestUserContext> additionalUsers = new ArrayList<>();
-        @Setter
-        private TestUserContext currentUser;
+    public int getUserCount() {
+        return users != null ? users.size() : 0;
+    }
 
-        public TestUserContext getCurrentUser() {
-            return currentUser;
-        }
+    public TestUserContext getFirstUser() {
+        return getUser(0);
+    }
 
-        public void addUser(TestUserContext user) {
-            additionalUsers.add(user);
+    public TestUserContext getSecondUser() {
+        if (users == null || users.size() < 2) {
+            throw new IllegalStateException("Less than 2 users available. Current: " +
+                    (users != null ? users.size() : 0));
         }
-
-        public List<TestUserContext> getAdditionalUsers() {
-            return additionalUsers;
-        }
-
-        public TestUserContext getFirstAdditionalUser() {
-            return additionalUsers.isEmpty() ? null : additionalUsers.get(0);
-        }
-
-        public void clear() {
-            currentUser = null;
-            additionalUsers.clear();
-        }
+        return getUser(1);
     }
 }
