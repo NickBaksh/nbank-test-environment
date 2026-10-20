@@ -26,6 +26,7 @@ public class LoginUserTest extends BaseUiTest {
         new LoginPage().open().login(admin.getUsername(), admin.getPassword())
                 .getPage(AdminPanel.class)
                 .getAdminPanelText()
+                .shouldHave(Condition.text("Admin Panel"))
                 .shouldBe(Condition.visible);
     }
 
