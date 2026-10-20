@@ -14,6 +14,7 @@ import api.specs.ResponseSpecs;
 import java.util.List;
 
 public class AdminSteps {
+
     public static CreateUserRequest createUser() {
         CreateUserRequest userRequest =
                 RandomModelGenerator.generate(CreateUserRequest.class);
