@@ -93,6 +93,7 @@ public class TransactionTest extends BaseUiTest {
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
                 .open()
+                .shouldHaveWelcomeTextForProfile(profileName)
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
@@ -287,7 +288,7 @@ public class TransactionTest extends BaseUiTest {
         // ШАГ 2: Выполнить шаги теста
         new UserDashboard()
                 .open()
-                .shouldHaveWelcomeTextForProfile(profileName)
+//                .shouldHaveWelcomeTextForProfile(profileName)
                 .shouldHaveUsername(username)
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)

@@ -43,7 +43,7 @@ public class UserDashboard extends BasePage<UserDashboard> {
     }
 
     public UserDashboard shouldHaveWelcomeTextForProfile(String profileName) {
-        Selenide.sleep(500);
+//        Selenide.sleep(500);
         String expectedText = getWelcomeText(profileName);
         welcomeTextElement.shouldBe(Condition.visible)
                 .shouldHave(Condition.text(expectedText), Duration.ofSeconds(10));

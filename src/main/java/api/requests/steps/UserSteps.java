@@ -26,6 +26,8 @@ public class UserSteps {
     // Хранилище для созданных в рамках теста пользователей
     private static final ThreadLocal<List<TestUserContext>> testUsers = ThreadLocal.withInitial(ArrayList::new);
 
+    private static final ThreadLocal<Boolean> isCleaningUp = ThreadLocal.withInitial(() -> false);
+
     // ==================== Создание пользователей ====================
 
     /**
@@ -66,7 +68,8 @@ public class UserSteps {
         // Сохраняем в хранилище текущего теста
         testUsers.get().add(context);
 
-        System.out.println("✅ User created: " + context.getDisplayName());
+        System.out.println("✅ User created in thread " + Thread.currentThread().getId() +
+                ": " + context.getDisplayName());
         return context;
     }
 
@@ -265,7 +268,7 @@ public class UserSteps {
     }
 
     /**
-     * Получить количество транзакций первого аккаунта
+     * Получить количество транзакций второго аккаунта
      */
     public static int getSecondAccountTransactionsCount(TestUserContext user) {
         List<Transaction> transactions = getAccountTransactions(user, user.getSecondAccountId());
@@ -282,39 +285,86 @@ public class UserSteps {
     }
 
     /**
-     * Очистить всех пользователей, созданных в текущем тесте
+     * Очистить только одного пользователя, созданного в тесте
      */
-    public static void cleanupTestUsers() {
-        CrudRequester deleteRequester = new CrudRequester(
-                RequestSpecs.adminSpec(),
-                ResponseSpecs.requestReturnsOK(),
-                Endpoint.ADMIN_USER_DELETE
-        );
-
-        // Сохраняем список ID пользователей для последующей проверки
-        List<Long> deletedUserIds = new ArrayList<>();
-        int deletedCount = 0;
-        for (TestUserContext context : testUsers.get()) {
-            try {
-                deleteRequester.delete(context.getUserId());
-                System.out.println("User deleted: " + context.getDisplayName());
-                deletedUserIds.add(context.getUserId());
-                deletedCount++;
-            } catch (Exception e) {
-                System.err.println("Failed to delete user: " + context.getUsername());
-            }
+    public static void cleanupTestUser(TestUserContext user) {
+        if (user == null || isCleaningUp.get()) {
+            return;
         }
 
-        // Проверяем, что пользователи действительно удалились
-        if (!deletedUserIds.isEmpty()) {
-            verifyUsersAreDeleted(deletedUserIds);
-        }
+        try {
+            CrudRequester deleteRequester = new CrudRequester(
+                    RequestSpecs.adminSpec(),
+                    ResponseSpecs.requestReturnsOK(),
+                    Endpoint.ADMIN_USER_DELETE
+            );
 
-        System.out.println("Total deleted: " + deletedCount + " users");
-        testUsers.get().clear();
+            deleteRequester.delete(user.getUserId());
+            System.out.println("🗑️ User deleted in thread " + Thread.currentThread().getId() +
+                    ": " + user.getDisplayName());
+
+            // Удаляем из хранилища текущего потока
+            testUsers.get().removeIf(u -> u.getUserId().equals(user.getUserId()));
+
+        } catch (Exception e) {
+            System.err.println("Failed to delete user: " + user.getUsername() + " - " + e.getMessage());
+        }
     }
 
 
+    /**
+     * Очистить всех пользователей, созданных в текущем тесте
+     */
+    public static void cleanupTestUsers() {
+        // Защита от рекурсивного вызова
+        if (isCleaningUp.get()) {
+            return;
+        }
+
+        try {
+            isCleaningUp.set(true);
+            Long threadId = Thread.currentThread().getId();
+
+            CrudRequester deleteRequester = new CrudRequester(
+                    RequestSpecs.adminSpec(),
+                    ResponseSpecs.requestReturnsOK(),
+                    Endpoint.ADMIN_USER_DELETE
+            );
+
+            // Сохраняем список ID пользователей для последующей проверки
+            List<Long> deletedUserIds = new ArrayList<>();
+            int deletedCount = 0;
+
+            // Очищаем всех пользователей текущего потока
+            for (TestUserContext context : testUsers.get()) {
+                try {
+                    deleteRequester.delete(context.getUserId());
+                    System.out.println("User deleted from thread " + threadId + ": " + context.getDisplayName());
+                    deletedUserIds.add(context.getUserId());
+                    deletedCount++;
+                } catch (Exception e) {
+                    System.err.println("Failed to delete user: " + context.getUsername() + " - " + e.getMessage());
+                }
+            }
+
+            // Проверяем, что пользователи действительно удалились
+            if (!deletedUserIds.isEmpty()) {
+                verifyUsersAreDeleted(deletedUserIds);
+            }
+
+            System.out.println("Total deleted in thread " + threadId + ": " + deletedCount + " users");
+
+            // Очищаем хранилище текущего потока
+            testUsers.get().clear();
+
+        } finally {
+            isCleaningUp.remove();
+        }
+    }
+
+    /**
+     * Проверить, что пользователи удалены
+     */
     private static void verifyUsersAreDeleted(List<Long> deletedUserIds) {
         // Получаем всех пользователей после удаления
         ValidatedCrudRequester<GetAllUsersResponse> getAllUsers = new ValidatedCrudRequester<>(
@@ -362,7 +412,7 @@ public class UserSteps {
 
         String token = userContext.getToken();
 
-        //Пополняем счёт Кейт на 20000 перед каждым тестом перевода
+        //Пополняем счёт на 20000 перед каждым тестом перевода
         //Вызов несколько раз, т.к. есть ограничение на пополнение в 5000
         repeat(4, () -> {
             DepositRequest request = DepositRequest.builder()
