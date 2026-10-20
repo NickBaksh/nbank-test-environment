@@ -5,7 +5,9 @@ import io.restassured.specification.ResponseSpecification;
 import org.apache.http.HttpStatus;
 
 public class ResponseSpecs {
-    private ResponseSpecs() {}
+    private ResponseSpecs() {
+    }
+
     // Константы с сообщениями в response
     // Сообщения об ошибках
     public static final String DEPOSIT_AMOUNT_MIN_ERROR = "Deposit amount must be at least 0.01";
