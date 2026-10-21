@@ -273,9 +273,20 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     /**
+     * Дождаться операции с указанным типом: результаты поиска подгружаются асинхронно,
+     * а getAllOperations() берет список таким, какой он есть в момент вызова
+     */
+    private void waitForOperationType(String expectedType) {
+        $$(".list-group-item")
+                .findBy(Condition.text(expectedType + " - "))
+                .shouldBe(Condition.visible);
+    }
+
+    /**
      * Найти первую операцию по типу
      */
     public OperationsList findFirstOperationByType(String expectedType) {
+        waitForOperationType(expectedType);
         return getAllOperations().stream()
                 .filter(operation -> operation.getOperationType().equals(expectedType))
                 .findFirst()
@@ -294,6 +305,7 @@ public class TransferPage extends BasePage<TransferPage> {
      * Проверить, что операция с указанным типом существует
      */
     public TransferPage shouldHaveOperationType(String expectedType) {
+        waitForOperationType(expectedType);
         boolean exists = getAllOperations().stream()
                 .anyMatch(operation -> operation.getOperationType().equals(expectedType));
 
