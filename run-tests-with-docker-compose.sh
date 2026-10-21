@@ -32,6 +32,12 @@ WAIT_TIMEOUT="${WAIT_TIMEOUT:-180}"
 
 APIBASEURL="${APIBASEURL:-http://backend:4111}"
 UIBASEURL="${UIBASEURL:-http://nginx}"
+# Конфиг браузеров Selenoid под архитектуру машины: образ Chrome для arm64 не запускается на x86_64
+case "$(uname -m)" in
+  x86_64|amd64) DEFAULT_BROWSERS=browsers-amd64.json ;;
+  *)            DEFAULT_BROWSERS=browsers.json ;;
+esac
+export SELENOID_BROWSERS="${SELENOID_BROWSERS:-${DEFAULT_BROWSERS}}"
 SELENOID_URL="${SELENOID_URL:-http://selenoid:4444}"
 SELENOID_UI_URL="${SELENOID_UI_URL:-http://selenoid-ui:8080}"
 DB_URL="${DB_URL:-jdbc:postgresql://postgres:5432/nbank}"
@@ -91,7 +97,8 @@ trap 'exit 130' INT TERM
 
 # =====================================================================
 step "1. Подготовка браузеров для Selenoid"
-BROWSERS_JSON="$(dirname "${COMPOSE_FILE}")/config/browsers.json"
+BROWSERS_JSON="$(dirname "${COMPOSE_FILE}")/config/${SELENOID_BROWSERS}"
+info "Конфиг браузеров: ${SELENOID_BROWSERS}"
 if [ -f "${BROWSERS_JSON}" ]; then
   for image in $(grep -o '"image"[[:space:]]*:[[:space:]]*"[^"]*"' "${BROWSERS_JSON}" | sed 's/.*"\([^"]*\)"$/\1/' | sort -u); do
     if docker image inspect "${image}" >/dev/null 2>&1; then

@@ -5,8 +5,13 @@ docker compose down
 
 echo ">>> Docker pull все образы браузеров"
 
-# Путь до файла
-json_file="./config/browsers.json"
+# Конфиг браузеров под архитектуру машины (его же читает Selenoid в docker-compose.yml)
+case "$(uname -m)" in
+  x86_64|amd64) default_browsers=browsers-amd64.json ;;
+  *)            default_browsers=browsers.json ;;
+esac
+export SELENOID_BROWSERS="${SELENOID_BROWSERS:-$default_browsers}"
+json_file="./config/${SELENOID_BROWSERS}"
 
 # Проверяем, что jq установлен
 if ! command -v jq &> /dev/null; then

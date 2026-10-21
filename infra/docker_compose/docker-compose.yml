@@ -90,7 +90,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config/:/etc/selenoid/:ro
-    command: ["-container-network", "nbank-network"]
+    # SELENOID_BROWSERS: browsers.json (arm64, Mac на Apple Silicon) или browsers-amd64.json (CI, x86_64)
+    command: ["-container-network", "nbank-network",
+              "-conf", "/etc/selenoid/${SELENOID_BROWSERS:-browsers.json}",
+              "-service-startup-timeout", "1m"]
     depends_on:
       - frontend
     networks:
