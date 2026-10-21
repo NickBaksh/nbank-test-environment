@@ -15,7 +15,9 @@ public enum InvalidTransferCase {
     }
 
     public double generate() {
-        if (this == ZERO) return 0.0;
+        if (this == ZERO) {
+            return 0.0;
+        }
         return Double.parseDouble(RandomModelGenerator.generateFromRegex(regex));
     }
 }

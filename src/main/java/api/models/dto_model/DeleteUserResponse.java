@@ -28,7 +28,9 @@ public class DeleteUserResponse extends BaseModel {
     }
 
     public Long getDeletedUserId() {
-        if (message == null) return null;
+        if (message == null) {
+            return null;
+        }
 
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("User with ID (\\d+)");
         java.util.regex.Matcher matcher = pattern.matcher(message);

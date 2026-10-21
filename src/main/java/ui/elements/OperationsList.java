@@ -4,7 +4,7 @@ import com.codeborne.selenide.SelenideElement;
 import lombok.Getter;
 
 @Getter
-public class OperationsList extends BaseElement{
+public class OperationsList extends BaseElement {
     private String operationType;
     private double amount;
     private String username;
