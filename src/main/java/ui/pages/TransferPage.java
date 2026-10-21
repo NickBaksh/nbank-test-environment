@@ -273,24 +273,18 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     /**
-     * Дождаться операции с указанным типом: результаты поиска подгружаются асинхронно,
-     * а getAllOperations() берет список таким, какой он есть в момент вызова
-     */
-    private void waitForOperationType(String expectedType) {
-        $$(".list-group-item")
-                .findBy(Condition.text(expectedType + " - "))
-                .shouldBe(Condition.visible);
-    }
-
-    /**
-     * Найти первую операцию по типу
+     * Найти первую операцию по типу.
+     * Selenide ждет появления элемента (результаты поиска подгружаются асинхронно)
+     * и разбирается только найденный элемент, а не весь список
      */
     public OperationsList findFirstOperationByType(String expectedType) {
-        waitForOperationType(expectedType);
-        return getAllOperations().stream()
-                .filter(operation -> operation.getOperationType().equals(expectedType))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("No operation found with type: " + expectedType));
+        return new OperationsList(operationItemOfType(expectedType));
+    }
+
+    private SelenideElement operationItemOfType(String expectedType) {
+        return $$(".list-group-item")
+                .findBy(Condition.text(expectedType + " - "))
+                .shouldBe(Condition.visible);
     }
 
     /**
@@ -305,13 +299,7 @@ public class TransferPage extends BasePage<TransferPage> {
      * Проверить, что операция с указанным типом существует
      */
     public TransferPage shouldHaveOperationType(String expectedType) {
-        waitForOperationType(expectedType);
-        boolean exists = getAllOperations().stream()
-                .anyMatch(operation -> operation.getOperationType().equals(expectedType));
-
-        if (!exists) {
-            throw new AssertionError("No operation found with type: " + expectedType);
-        }
+        operationItemOfType(expectedType);
         return this;
     }
 }
