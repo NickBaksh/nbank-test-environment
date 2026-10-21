@@ -2,31 +2,49 @@ name: Run tests
 
 on: [ push, workflow_dispatch ]
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   run-tests:
     name: Set up services (review apps) and run tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'corretto'
-          java-version: '21'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Cache Maven repository
-        uses: actions/cache@v4
+      - name: Build test image
+        uses: docker/build-push-action@v6
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Set up services
-        working-directory: infra/docker_compose
-        run: bash config/restart_docker.sh
+          context: .
+          tags: nbank-test-environment:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Run tests
-        run: ./mvnw clean test
+        env:
+          TEST_IMAGE: nbank-test-environment
+          SKIP_BUILD: 1
+          KEEP_ENV: 1
+        run: |
+          chmod +x run-tests-with-docker-compose.sh
+          ./run-tests-with-docker-compose.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
+          if-no-files-found: ignore
+
+      - name: Dump docker compose logs on failure
+        if: failure()
+        run: docker compose -f infra/docker_compose/docker-compose.yml logs --no-color --tail 200
