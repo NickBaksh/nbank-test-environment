@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static api.constants.JsonFields.MESSAGE;
 import static api.generators.testdata.DataProviders.NON_EXISTENT_ACCOUNT_ID;
 import static api.specs.ResponseSpecs.UNAUTHORIZED_ACCESS_ERROR;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class DepositOperationsTest extends BaseTest {
@@ -44,7 +44,7 @@ public class DepositOperationsTest extends BaseTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidDepositAmountsV2Api")
+    @MethodSource("invalidDepositAmountsV1Api")
     @DisplayName("Невозможно пополнить счёт невалидной суммой (депозит <= 0 или > 5000), API v1")
     @UserSession
     @Browsers({"chrome"})
@@ -81,12 +81,12 @@ public class DepositOperationsTest extends BaseTest {
         // Сравниваю через ModelAssertion модели запроса и ответа
         ModelAssertions.assertThatModels(request, response).match();
 
-        softly.assertThat(response.getTransactions())
+        softly.assertThat(response.getDepositAmount())
+                .as("Deposit amount in response")
+                .isEqualTo(deposit);
+        softly.assertThat(response.getTransactionId())
                 .as("Deposit transaction should be created")
-                .anySatisfy(t -> {
-                    assertThat(t.getType()).isEqualTo("DEPOSIT");
-                    assertThat(t.getAmount()).isEqualTo(deposit);
-                });
+                .isNotNull();
 
         double balanceActual = UserSteps.getFirstAccountBalance(user);
         int transactionCountActual = UserSteps.getFirstAccountTransactionsCount(user);
@@ -124,7 +124,7 @@ public class DepositOperationsTest extends BaseTest {
                 ResponseSpecs.returnsForbidden(),
                 Endpoint.ACCOUNTS_DEPOSIT)
                 .create(request)
-                .body(equalTo(UNAUTHORIZED_ACCESS_ERROR));
+                .body(MESSAGE, equalTo(UNAUTHORIZED_ACCESS_ERROR));
 
         verifyAccountUnchanged(user, balanceExpected, transactionsCountExpected);
     }
@@ -153,7 +153,7 @@ public class DepositOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.ACCOUNTS_DEPOSIT)
                 .create(request)
-                .body(equalTo(expectedError));
+                .body(MESSAGE, equalTo(expectedError));
 
         // Assert: счёт не изменился
         verifyAccountUnchanged(user, balanceExpected, transactionsCountExpected);

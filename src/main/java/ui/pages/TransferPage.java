@@ -15,6 +15,7 @@ public class TransferPage extends BasePage<TransferPage> {
     public static final String TRANSFER_PAGE_TITLE = "🔄 Make a Transfer";
     public static final String DEFAULT_ACCOUNT_OPTION = "-- Choose an account --";
     public static final String MATCHING_TRANSACTIONS_TITLE = "Matching Transactions";
+    public static final String TRANSACTION_HISTORY_TITLE = "Transaction History";
     public static final String REPEAT_TRANSFER_TITLE = "🔄 Repeat Transfer";
     public static final String TRANSFER_IN = "TRANSFER_IN";
     public static final String TRANSFER_OUT = "TRANSFER_OUT";
@@ -29,8 +30,10 @@ public class TransferPage extends BasePage<TransferPage> {
     private final SelenideElement transferButton = $(Selectors.byText("\uD83D\uDE80 Send Transfer"));
     // Кнопка "Transfer Again" для перехода к истории
     private final SelenideElement transferAgainButton = $(Selectors.byText("\uD83D\uDD01 Transfer Again"));
-    // Элементы страницы истории транзакций
-    private final SelenideElement matchingTransactionsTitle = $(Selectors.byText("Matching Transactions"));
+    // Заголовок истории операций выбранного счёта
+    private final SelenideElement transactionHistoryTitle = $(Selectors.byText(TRANSACTION_HISTORY_TITLE));
+    // Поиск транзакций по имени (в preprod-версии фронтенда отсутствует)
+    private final SelenideElement matchingTransactionsTitle = $(Selectors.byText(MATCHING_TRANSACTIONS_TITLE));
     private final SelenideElement searchNameField = $(Selectors.byAttribute("placeholder", "Enter name to find transactions"));
     private final SelenideElement searchButton = $(Selectors.byText("\uD83D\uDD0D Search Transactions"));
     // Элементы модального окна повторного перевода
@@ -196,6 +199,11 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage shouldOpenTransactionHistory() {
+        transactionHistoryTitle.shouldBe(Condition.visible);
+        return this;
+    }
+
+    public TransferPage shouldOpenMatchingTransactions() {
         matchingTransactionsTitle.shouldBe(Condition.visible);
         return this;
     }
@@ -283,15 +291,16 @@ public class TransferPage extends BasePage<TransferPage> {
 
     private SelenideElement operationItemOfType(String expectedType) {
         return $$(".list-group-item")
-                .findBy(Condition.text(expectedType + " - "))
+                .findBy(Condition.text(expectedType + OperationsList.TYPE_AMOUNT_SEPARATOR))
                 .shouldBe(Condition.visible);
     }
 
     /**
-     * Кликнуть Repeat на первой операции TRANSFER_IN
+     * Кликнуть Repeat на первой операции TRANSFER_OUT.
+     * Кнопка Repeat есть только у исходящих переводов: получатель берется из relatedAccountId
      */
-    public TransferPage clickRepeatOnFirstTransferIn() {
-        findFirstOperationByType("TRANSFER_IN").clickRepeat();
+    public TransferPage clickRepeatOnFirstTransferOut() {
+        findFirstOperationByType(TRANSFER_OUT).clickRepeat();
         return this;
     }
 

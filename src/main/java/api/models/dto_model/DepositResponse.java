@@ -3,8 +3,6 @@ package api.models.dto_model;
 import api.models.BaseModel;
 import lombok.*;
 
-import java.util.List;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
@@ -14,5 +12,6 @@ public class DepositResponse extends BaseModel {
     private Long id;
     private String accountNumber;
     private double balance;
-    private List<Transaction> transactions;
+    private double depositAmount;
+    private Long transactionId;
 }

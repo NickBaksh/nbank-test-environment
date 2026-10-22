@@ -6,6 +6,7 @@ import common.annotations.Browsers;
 import common.annotations.Environments;
 import common.annotations.UserSession;
 import iteration_one.ui_tests.BaseUiTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ui.pages.UserDashboard;
@@ -351,10 +352,9 @@ public class TransactionTest extends BaseUiTest {
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .clickTransferAgain()
+                .selectAccount(firstAccountId)
                 .shouldOpenTransactionHistory()
-                .inputName(profileName)
-                .clickSearchByNameButton()
-                .clickRepeatOnFirstTransferIn()
+                .clickRepeatOnFirstTransferOut()
                 .selectAccountInModal(firstAccountId)
                 .enterAmountInModal(transferAmount)
                 .checkConfirmCheckboxInModal()
@@ -372,6 +372,7 @@ public class TransactionTest extends BaseUiTest {
     }
 
     @Test
+    @Disabled("В preprod-версии фронтенда убран поиск транзакций по имени в режиме Transfer Again")
     @DisplayName("Поиск несуществующего пользователя в истории транзакций не показывает результатов")
     @UserSession
     @Environments
@@ -402,7 +403,7 @@ public class TransactionTest extends BaseUiTest {
                 .goToTransferPage()
                 .shouldHaveTitle(TRANSFER_PAGE_TITLE)
                 .clickTransferAgain()
-                .shouldOpenTransactionHistory()
+                .shouldOpenMatchingTransactions()
                 .inputName(invalidName)
                 .clickSearchButtonAndVerifyAlertAndAccept(NO_MATCHING_USERS_FOUND.getMessage());
 
