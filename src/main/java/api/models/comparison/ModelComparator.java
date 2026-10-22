@@ -111,8 +111,12 @@ public class ModelComparator {
      * 🆕 Сравнение значений с поддержкой разных типов
      */
     public boolean compareValues(Object sourceValue, Object targetValue) {
-        if (sourceValue == null && targetValue == null) return true;
-        if (sourceValue == null || targetValue == null) return false;
+        if (sourceValue == null && targetValue == null) {
+            return true;
+        }
+        if (sourceValue == null || targetValue == null) {
+            return false;
+        }
 
         // === Сравнение чисел (Double, BigDecimal, Integer, Long) ===
         if (sourceValue instanceof Number && targetValue instanceof Number) {

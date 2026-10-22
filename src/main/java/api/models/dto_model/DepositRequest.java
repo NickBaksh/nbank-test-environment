@@ -11,10 +11,10 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class DepositRequest extends BaseModel {
-    @JsonProperty("id")
+    @JsonProperty("accountId")
     private Long accountId;
 
     @GeneratingRule(regex = "^(0\\.0[1-9]|[1-9]\\d{0,3}\\.\\d{2}|5000\\.00)$")
-    @JsonProperty("balance")
+    @JsonProperty("amount")
     private Double amount;
 }

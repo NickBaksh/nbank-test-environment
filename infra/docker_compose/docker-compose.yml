@@ -1,6 +1,7 @@
 services:
   backend:
-    image: nobugsme/nbank:with_validation_fix
+    image: nobugsme/nbank:preprod_version
+    pull_policy: always
     container_name: nbank-backend
     ports:
       - "4111:4111"
@@ -63,7 +64,8 @@ services:
       retries: 5
 
   frontend:
-    image: nobugsme/nbank-ui:latest
+    image: nobugsme/nbank-ui:preprod_version
+    pull_policy: always
     expose:
       - "80"
     depends_on:
@@ -90,7 +92,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config/:/etc/selenoid/:ro
-    command: ["-container-network", "nbank-network"]
+    # SELENOID_BROWSERS: browsers.json (arm64, Mac на Apple Silicon) или browsers-amd64.json (CI, x86_64)
+    command: ["-container-network", "nbank-network",
+              "-conf", "/etc/selenoid/${SELENOID_BROWSERS:-browsers.json}",
+              "-service-startup-timeout", "1m"]
     depends_on:
       - frontend
     networks:

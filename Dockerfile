@@ -26,11 +26,3 @@ COPY . .
 RUN chmod +x run-tests.sh
 
 ENTRYPOINT ["./run-tests.sh"]
-
-CMD mkdir -p /app/logs && \
-    { \
-      echo ">>> Running tests with profile ${TEST_PROFILE}"; \
-      mvn -q test -P "${TEST_PROFILE}"; \
-      echo ">>> Generating surefire report"; \
-      mvn -B -P "${TEST_PROFILE}" surefire-report:report-only; \
-    } 2>&1 | tee /app/logs/run.log

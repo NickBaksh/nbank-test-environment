@@ -18,8 +18,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static api.constants.JsonFields.MESSAGE;
 import static api.specs.ResponseSpecs.PROFILE_NAME_FORMAT_ERROR;
-import static api.specs.ResponseSpecs.PROFILE_UPDATE_SUCCESS;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ProfileNameChangingOperationsTest extends BaseTest {
@@ -47,8 +47,7 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
 
         ModelAssertions.assertThatModels(request, response).match();
 
-        // Сравниваю message с ожидаемым значением
-        softly.assertThat(response.getMessage()).isEqualTo(PROFILE_UPDATE_SUCCESS);
+        softly.assertThat(response.getUsername()).isEqualTo(user.getUsername());
 
         if (Config.isDbChecksEnabled()) {
             DataBaseSteps.verifyCustomerProfileName(softly, user.getUsername(), profileName);
@@ -76,7 +75,7 @@ public class ProfileNameChangingOperationsTest extends BaseTest {
                 ResponseSpecs.returnsBadRequest(),
                 Endpoint.CUSTOMER_PROFILE_UPDATE)
                 .update(request)
-                .body(equalTo(PROFILE_NAME_FORMAT_ERROR));
+                .body(MESSAGE, equalTo(PROFILE_NAME_FORMAT_ERROR));
 
         String profileNameAfter = UserSteps.getProfileName(user);
 

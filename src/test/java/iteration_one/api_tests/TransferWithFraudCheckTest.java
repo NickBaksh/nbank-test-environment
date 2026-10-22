@@ -39,7 +39,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
         disabledReason = "Fraud check недоступен на этом окружении")
 @ExtendWith({TimingExtension.class, FraudCheckMockExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
-public class TransferWithFraudCheckTest extends BaseTest{
+public class TransferWithFraudCheckTest extends BaseTest {
     @BeforeEach
     public void setupTest() {
         this.softly = new SoftAssertions();

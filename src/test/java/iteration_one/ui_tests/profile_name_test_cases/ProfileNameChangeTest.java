@@ -78,7 +78,6 @@ public class ProfileNameChangeTest extends BaseUiTest {
                 .shouldHaveEditProfileText(EDIT_PROFILE_TEXT)
                 .clearName()
                 .enterName(invalidName)
-                .saveChanges()
                 .saveChangesAndVerifyAlert(expectedAlert);
 
         // ШАГ 3: Проверить, что имя профиля обновилось на сервере

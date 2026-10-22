@@ -9,6 +9,8 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class UpdateCustomerProfileResponse extends BaseModel {
-    private Customer customer;
-    private String message;
+    private Long id;
+    private String username;
+    private String name;
+    private String role;
 }
