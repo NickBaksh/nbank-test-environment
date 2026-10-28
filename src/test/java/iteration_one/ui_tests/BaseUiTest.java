@@ -6,6 +6,8 @@ import api.requests.steps.UserSteps;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
+import com.codeborne.selenide.logevents.SelenideLogger;
+import io.qameta.allure.selenide.AllureSelenide;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +44,12 @@ public class BaseUiTest extends BaseTest {
 
     @BeforeEach
     public void setUpBrowser() {
+        // Слушатели SelenideLogger хранятся отдельно для каждого потока, а тесты идут параллельно.
+        // Регистрируем перед каждым тестом в его потоке; повторный вызов с тем же именем заменяет слушателя
+        SelenideLogger.addListener("AllureSelenide", new AllureSelenide()
+                .screenshots(true)
+                .savePageSource(true));
+
         if (WebDriverRunner.hasWebDriverStarted()) {
             Selenide.closeWebDriver();
         }

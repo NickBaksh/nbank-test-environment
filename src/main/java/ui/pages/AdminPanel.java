@@ -3,6 +3,7 @@ package ui.pages;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.SelenideElement;
+import common.helpers.StepLogger;
 import lombok.Getter;
 import ui.elements.UserBadge;
 
@@ -20,14 +21,18 @@ public class AdminPanel extends BasePage<AdminPanel> {
     }
 
     public AdminPanel createUser(String username, String password) {
-        usernameInput.sendKeys(username);
-        passwordInput.sendKeys(password);
-        button.click();
-        return this;
+        return StepLogger.logWithScreenshot("Create user '" + username + "' via Admin Panel", () -> {
+            usernameInput.sendKeys(username);
+            passwordInput.sendKeys(password);
+            button.click();
+            return this;
+        });
     }
 
     public List<UserBadge> getAllUsers() {
-        ElementsCollection elementsCollection = $(Selectors.byText("All Users")).parent().findAll("li");
-        return generatePageElements(elementsCollection, UserBadge::new);
+        return StepLogger.logWithScreenshot("Get all users from Admin Panel", () -> {
+            ElementsCollection elementsCollection = $(Selectors.byText("All Users")).parent().findAll("li");
+            return generatePageElements(elementsCollection, UserBadge::new);
+        });
     }
 }

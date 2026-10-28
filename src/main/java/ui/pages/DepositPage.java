@@ -4,6 +4,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import common.helpers.StepLogger;
 import org.openqa.selenium.Alert;
 
 import static com.codeborne.selenide.Selenide.$;
@@ -45,29 +46,37 @@ public class DepositPage extends BasePage<DepositPage> {
 
     // Действия (actions)
     public DepositPage selectAccount(long accountId) {
-        String accountValue = String.valueOf(accountId);
-        accountSelector.selectOptionByValue(accountValue);
-        shouldHaveSelectedAccountValue(accountValue);
-        return this;
+        return StepLogger.logWithScreenshot("Select account " + accountId, () -> {
+            String accountValue = String.valueOf(accountId);
+            accountSelector.selectOptionByValue(accountValue);
+            shouldHaveSelectedAccountValue(accountValue);
+            return this;
+        });
     }
 
     public DepositPage enterAmount(double amount) {
-        depositInput.setValue(String.valueOf(amount));
-        return this;
+        return StepLogger.logWithScreenshot("Enter amount " + amount, () -> {
+            depositInput.setValue(String.valueOf(amount));
+            return this;
+        });
     }
 
     public DepositPage enterAmount(String amount) {
-        depositInput.setValue(amount);
-        return this;
+        return StepLogger.logWithScreenshot("Enter amount '" + amount + "'", () -> {
+            depositInput.setValue(amount);
+            return this;
+        });
     }
 
     public DepositPage clickDepositButton() {
-        depositButton
-                .shouldBe(Condition.visible)
-                .shouldBe(Condition.enabled)
-                .shouldBe(Condition.interactable)
-                .click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Deposit button", () -> {
+            depositButton
+                    .shouldBe(Condition.visible)
+                    .shouldBe(Condition.enabled)
+                    .shouldBe(Condition.interactable)
+                    .click();
+            return this;
+        });
     }
 
     // Работа с алертами
@@ -113,8 +122,9 @@ public class DepositPage extends BasePage<DepositPage> {
 
     // Комбинированные действия
     public DepositPage makeDeposit(long accountId, double amount) {
-        return selectAccount(accountId)
-                .enterAmount(amount)
-                .clickDepositButton();
+        return StepLogger.log(String.format("Make deposit %s to account %d", amount, accountId),
+                () -> selectAccount(accountId)
+                        .enterAmount(amount)
+                        .clickDepositButton());
     }
 }

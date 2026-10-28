@@ -3,6 +3,7 @@ package ui.pages;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.SelenideElement;
+import common.helpers.StepLogger;
 import lombok.Getter;
 import org.openqa.selenium.By;
 
@@ -59,10 +60,12 @@ public class UserDashboard extends BasePage<UserDashboard> {
     public EditProfilePage goToEditProfile() {
         // Страница Edit Profile при открытии загружает профиль и перезаписывает поле имени.
         // Ждем завершения этого запроса, иначе введенное тестом имя может затереться
-        long profileRequestsBefore = completedProfileRequestsCount();
-        usernameElement.click();
-        Wait().until(driver -> completedProfileRequestsCount() > profileRequestsBefore);
-        return new EditProfilePage();
+        return StepLogger.logWithScreenshot("Go to Edit Profile and wait for profile to load", () -> {
+            long profileRequestsBefore = completedProfileRequestsCount();
+            usernameElement.click();
+            Wait().until(driver -> completedProfileRequestsCount() > profileRequestsBefore);
+            return new EditProfilePage();
+        });
     }
 
     private static long completedProfileRequestsCount() {
@@ -73,12 +76,16 @@ public class UserDashboard extends BasePage<UserDashboard> {
     }
 
     public DepositPage goToDepositMoneyPage() {
-        depositButton.click();
-        return new DepositPage();
+        return StepLogger.logWithScreenshot("Go to Deposit Money page", () -> {
+            depositButton.click();
+            return new DepositPage();
+        });
     }
 
     public TransferPage goToTransferPage() {
-        transferButton.click();
-        return new TransferPage();
+        return StepLogger.logWithScreenshot("Go to Transfer page", () -> {
+            transferButton.click();
+            return new TransferPage();
+        });
     }
 }
