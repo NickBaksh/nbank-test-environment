@@ -3,6 +3,7 @@ package ui.pages;
 import api.models.dto_model.CreateUserRequest;
 import api.specs.RequestSpecs;
 import com.codeborne.selenide.*;
+import common.helpers.StepLogger;
 import org.openqa.selenium.Alert;
 import ui.elements.BaseElement;
 
@@ -23,17 +24,21 @@ public abstract class BasePage<T extends BasePage> {
      * Авторизация через токен (для UI тестов)
      */
     public static void authWithToken(String token) {
-        Selenide.open("/");
-        executeJavaScript("localStorage.setItem('authToken', arguments[0]);", token);
+        StepLogger.logWithScreenshot("Authorize via token", () -> {
+            Selenide.open("/");
+            executeJavaScript("localStorage.setItem('authToken', arguments[0]);", token);
+        });
     }
 
     /**
      * Авторизация через логин и пароль
      */
     public static void authWithCredentials(String username, String password) {
-        Selenide.open("/");
-        String token = RequestSpecs.getUserAuthHeader(username, password);
-        executeJavaScript("localStorage.setItem('authToken', arguments[0]);", token);
+        StepLogger.logWithScreenshot("Authorize as '" + username + "'", () -> {
+            Selenide.open("/");
+            String token = RequestSpecs.getUserAuthHeader(username, password);
+            executeJavaScript("localStorage.setItem('authToken', arguments[0]);", token);
+        });
     }
 
     /**
@@ -52,7 +57,8 @@ public abstract class BasePage<T extends BasePage> {
     public abstract String url();
 
     public T open() {
-        return Selenide.open(url(), (Class<T>) this.getClass());
+        return StepLogger.logWithScreenshot("Open page " + url(),
+                () -> Selenide.open(url(), (Class<T>) this.getClass()));
     }
 
     public <T extends BasePage> T getPage(Class<T> pageClass) {

@@ -1,6 +1,7 @@
 package ui.pages;
 
 import com.codeborne.selenide.*;
+import common.helpers.StepLogger;
 import ui.elements.OperationsList;
 import utils.AlertHelper;
 
@@ -89,48 +90,62 @@ public class TransferPage extends BasePage<TransferPage> {
     // ========== Действия с формой перевода (RequestType) ==========
 
     public TransferPage selectAccount(long accountId) {
-        String accountValue = String.valueOf(accountId);
-        accountSelector.shouldBe(Condition.visible).selectOptionByValue(accountValue);
-        shouldHaveSelectedAccountValue(accountValue);
-        return this;
+        return StepLogger.logWithScreenshot("Select sender account " + accountId, () -> {
+            String accountValue = String.valueOf(accountId);
+            accountSelector.shouldBe(Condition.visible).selectOptionByValue(accountValue);
+            shouldHaveSelectedAccountValue(accountValue);
+            return this;
+        });
     }
 
     public TransferPage enterRecipientName(String name) {
-        recipientNameField.shouldBe(Condition.visible);
-        recipientNameField.clear();
-        recipientNameField.sendKeys(name);
-        return this;
+        return StepLogger.logWithScreenshot("Enter recipient name '" + name + "'", () -> {
+            recipientNameField.shouldBe(Condition.visible);
+            recipientNameField.clear();
+            recipientNameField.sendKeys(name);
+            return this;
+        });
     }
 
     public TransferPage enterRecipientAccountNumber(long accountId) {
-        String accountNumber = "ACC" + accountId;
-        recipientAccountNumberField.shouldBe(Condition.visible);
-        recipientAccountNumberField.clear();
-        recipientAccountNumberField.sendKeys(accountNumber);
-        return this;
+        return StepLogger.logWithScreenshot("Enter recipient account number ACC" + accountId, () -> {
+            String accountNumber = "ACC" + accountId;
+            recipientAccountNumberField.shouldBe(Condition.visible);
+            recipientAccountNumberField.clear();
+            recipientAccountNumberField.sendKeys(accountNumber);
+            return this;
+        });
     }
 
     public TransferPage enterRecipientAccountNumber(String accountNumber) {
-        recipientAccountNumberField.shouldBe(Condition.visible);
-        recipientAccountNumberField.clear();
-        recipientAccountNumberField.sendKeys(accountNumber);
-        return this;
+        return StepLogger.logWithScreenshot("Enter recipient account number '" + accountNumber + "'", () -> {
+            recipientAccountNumberField.shouldBe(Condition.visible);
+            recipientAccountNumberField.clear();
+            recipientAccountNumberField.sendKeys(accountNumber);
+            return this;
+        });
     }
 
     public TransferPage enterAmount(double amount) {
-        amountField.shouldBe(Condition.visible)
-                .setValue(String.valueOf(amount));
-        return this;
+        return StepLogger.logWithScreenshot("Enter amount " + amount, () -> {
+            amountField.shouldBe(Condition.visible)
+                    .setValue(String.valueOf(amount));
+            return this;
+        });
     }
 
     public TransferPage checkConfirmCheckbox() {
-        confirmCheckbox.shouldBe(Condition.visible).click();
-        return this;
+        return StepLogger.logWithScreenshot("Check confirm checkbox", () -> {
+            confirmCheckbox.shouldBe(Condition.visible).click();
+            return this;
+        });
     }
 
     public TransferPage clickTransferButton() {
-        transferButton.shouldBe(Condition.visible).shouldBe(Condition.enabled).click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Send Transfer button", () -> {
+            transferButton.shouldBe(Condition.visible).shouldBe(Condition.enabled).click();
+            return this;
+        });
     }
 
     // ========== Проверка алертов ==========
@@ -141,13 +156,17 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage clickTransferButtonAndVerifyAlertAndAccept(String expectedMessage) {
-        AlertHelper.clickAndVerifyAlert(transferButton, expectedMessage);
-        return this;
+        return StepLogger.logWithScreenshot("Click Send Transfer and verify alert '" + expectedMessage + "'", () -> {
+            AlertHelper.clickAndVerifyAlert(transferButton, expectedMessage);
+            return this;
+        });
     }
 
     public TransferPage clickSearchButtonAndVerifyAlertAndAccept(String expectedMessage) {
-        AlertHelper.clickAndVerifyAlert(searchButton, expectedMessage);
-        return this;
+        return StepLogger.logWithScreenshot("Click Search and verify alert '" + expectedMessage + "'", () -> {
+            AlertHelper.clickAndVerifyAlert(searchButton, expectedMessage);
+            return this;
+        });
     }
 
     public TransferPage verifySuccessfulTransferAlert(double amount, String accountNumber) {
@@ -170,32 +189,36 @@ public class TransferPage extends BasePage<TransferPage> {
 
     // Делаем перевод в котором accountNumber == ACC + accountId
     public TransferPage makeTransfer(long fromAccountId, String recipientName, long toAccountId, double amount) {
-        return selectAccount(fromAccountId)
+        return StepLogger.log(String.format("Make transfer %s from account %d to ACC%d (recipient '%s')",
+                amount, fromAccountId, toAccountId, recipientName), () -> selectAccount(fromAccountId)
                 .enterRecipientName(recipientName)
                 .enterRecipientAccountNumber(toAccountId)
                 .enterAmount(amount)
                 .checkConfirmCheckbox()
-                .clickTransferButton();
+                .clickTransferButton());
     }
 
     // Делаем перевод в котором accountNumber генерируется в новом формате
     public TransferPage makeTransfer(long fromAccountId, String recipientName, String toAccountNumber, double amount) {
-        return selectAccount(fromAccountId)
+        return StepLogger.log(String.format("Make transfer %s from account %d to %s (recipient '%s')",
+                amount, fromAccountId, toAccountNumber, recipientName), () -> selectAccount(fromAccountId)
                 .enterRecipientName(recipientName)
                 .enterRecipientAccountNumber(toAccountNumber)
                 .enterAmount(amount)
                 .checkConfirmCheckbox()
-                .clickTransferButton();
+                .clickTransferButton());
     }
 
     // ========== Действия с историей транзакций ==========
 
     public TransferPage clickTransferAgain() {
-        transferAgainButton
-                .shouldBe(Condition.visible)
-                .shouldBe(Condition.enabled)
-                .click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Transfer Again", () -> {
+            transferAgainButton
+                    .shouldBe(Condition.visible)
+                    .shouldBe(Condition.enabled)
+                    .click();
+            return this;
+        });
     }
 
     public TransferPage shouldOpenTransactionHistory() {
@@ -209,27 +232,33 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage inputName(String name) {
-        searchNameField.shouldBe(Condition.visible);
-        searchNameField.shouldBe(Condition.enabled);
-        searchNameField.clear();
-        searchNameField.setValue(name);
-        searchNameField.shouldHave(Condition.value(name));
-        return this;
+        return StepLogger.logWithScreenshot("Enter search name '" + name + "'", () -> {
+            searchNameField.shouldBe(Condition.visible);
+            searchNameField.shouldBe(Condition.enabled);
+            searchNameField.clear();
+            searchNameField.setValue(name);
+            searchNameField.shouldHave(Condition.value(name));
+            return this;
+        });
     }
 
     public TransferPage clickSearchByNameButton() {
-        searchButton.shouldBe(Condition.visible);
-        searchButton.shouldBe(Condition.enabled);
-        searchButton.click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Search by name button", () -> {
+            searchButton.shouldBe(Condition.visible);
+            searchButton.shouldBe(Condition.enabled);
+            searchButton.click();
+            return this;
+        });
     }
 
     public TransferPage clickRepeatTransferOnFirstTransaction(String transactionType) {
-        SelenideElement transactionItem = $$(".list-group-item")
-                .findBy(Condition.text(transactionType));
-        SelenideElement repeatButton = transactionItem.$(".pink-btn");
-        repeatButton.shouldBe(Condition.visible).click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Repeat on first " + transactionType + " transaction", () -> {
+            SelenideElement transactionItem = $$(".list-group-item")
+                    .findBy(Condition.text(transactionType));
+            SelenideElement repeatButton = transactionItem.$(".pink-btn");
+            repeatButton.shouldBe(Condition.visible).click();
+            return this;
+        });
     }
 
     // ========== Действия с модальным окном повторного перевода ==========
@@ -240,44 +269,55 @@ public class TransferPage extends BasePage<TransferPage> {
     }
 
     public TransferPage selectAccountInModal(long accountId) {
-        String accountValue = String.valueOf(accountId);
-        modalAccountSelector.selectOptionByValue(accountValue);
-        modalAccountSelector.shouldHave(Condition.value(accountValue));
-        return this;
+        return StepLogger.logWithScreenshot("Select sender account " + accountId + " in modal", () -> {
+            String accountValue = String.valueOf(accountId);
+            modalAccountSelector.selectOptionByValue(accountValue);
+            modalAccountSelector.shouldHave(Condition.value(accountValue));
+            return this;
+        });
     }
 
     public TransferPage enterAmountInModal(double amount) {
-        modalAmountField.shouldBe(Condition.visible)
-                .setValue(String.valueOf(amount));
-        return this;
+        return StepLogger.logWithScreenshot("Enter amount " + amount + " in modal", () -> {
+            modalAmountField.shouldBe(Condition.visible)
+                    .setValue(String.valueOf(amount));
+            return this;
+        });
     }
 
     public TransferPage checkConfirmCheckboxInModal() {
-        modalConfirmCheckbox.shouldBe(Condition.visible).click();
-        return this;
+        return StepLogger.logWithScreenshot("Check confirm checkbox in modal", () -> {
+            modalConfirmCheckbox.shouldBe(Condition.visible).click();
+            return this;
+        });
     }
 
     public TransferPage clickTransferButtonInModal() {
-        modalTransferButton.shouldBe(Condition.visible, Duration.ofSeconds(10))
-                .shouldBe(Condition.enabled, Duration.ofSeconds(10))
-                .shouldBe(Condition.interactable)
-                .click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Send Transfer button in modal", () -> {
+            modalTransferButton.shouldBe(Condition.visible, Duration.ofSeconds(10))
+                    .shouldBe(Condition.enabled, Duration.ofSeconds(10))
+                    .shouldBe(Condition.interactable)
+                    .click();
+            return this;
+        });
     }
 
     public TransferPage makeRepeatTransferInModal(long fromAccountId, double amount) {
-        return selectAccountInModal(fromAccountId)
-                .enterAmountInModal(amount)
-                .checkConfirmCheckboxInModal()
-                .clickTransferButtonInModal();
+        return StepLogger.log(String.format("Make repeat transfer %s from account %d", amount, fromAccountId),
+                () -> selectAccountInModal(fromAccountId)
+                        .enterAmountInModal(amount)
+                        .checkConfirmCheckboxInModal()
+                        .clickTransferButtonInModal());
     }
 
     /**
      * Получить все операции в истории транзакций
      */
     public List<OperationsList> getAllOperations() {
-        ElementsCollection elementsCollection = $$(".list-group-item");
-        return generatePageElements(elementsCollection, OperationsList::new);
+        return StepLogger.logWithScreenshot("Get all operations from Transaction History", () -> {
+            ElementsCollection elementsCollection = $$(".list-group-item");
+            return generatePageElements(elementsCollection, OperationsList::new);
+        });
     }
 
     /**
@@ -300,8 +340,10 @@ public class TransferPage extends BasePage<TransferPage> {
      * Кнопка Repeat есть только у исходящих переводов: получатель берется из relatedAccountId
      */
     public TransferPage clickRepeatOnFirstTransferOut() {
-        findFirstOperationByType(TRANSFER_OUT).clickRepeat();
-        return this;
+        return StepLogger.logWithScreenshot("Click Repeat on first TRANSFER_OUT operation", () -> {
+            findFirstOperationByType(TRANSFER_OUT).clickRepeat();
+            return this;
+        });
     }
 
     /**

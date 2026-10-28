@@ -8,7 +8,8 @@
 #   1. Поднимает окружение (docker compose up -d) и ждёт готовности сервисов
 #   2. Собирает образ с тестами
 #   3. Запускает API-тесты, затем UI-тесты в контейнере (docker run --rm)
-#   4. Останавливает окружение — всегда, даже если тесты упали
+#   4. Собирает Allure-отчёт с историей прошлых прогонов (если установлен allure CLI)
+#   5. Останавливает окружение — всегда, даже если тесты упали
 #
 # Настройки (необязательно, через переменные окружения):
 #   COMPOSE_FILE   путь к docker-compose.yml       (по умолчанию ./docker-compose.yml)
@@ -16,6 +17,8 @@
 #   PROFILES       какие тесты запускать           (по умолчанию "api ui")
 #   SKIP_BUILD=1   не пересобирать образ с тестами
 #   KEEP_ENV=1     не останавливать окружение после тестов (для отладки)
+#   ALLURE_REPORT_DIR  куда класть Allure-отчёт    (по умолчанию ./allure-report)
+#   SKIP_ALLURE=1  не генерировать Allure-отчёт
 # =====================================================================
 set -uo pipefail
 
@@ -27,6 +30,9 @@ TEST_IMAGE="${TEST_IMAGE:-nbank-test-environment}"
 PROFILES="${PROFILES:-api ui}"
 NETWORK="${NETWORK:-nbank-network}"
 RESULTS_DIR="${SCRIPT_DIR}/test-results"
+# Общий RUN_ID для всех профилей: папки прогона <RUN_ID>_api и <RUN_ID>_ui
+RUN_ID="${RUN_ID:-$(date -u +%Y-%m-%d_%H-%M-%SZ)}"
+ALLURE_REPORT_DIR="${ALLURE_REPORT_DIR:-${SCRIPT_DIR}/allure-report}"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-180}"
 
 
@@ -143,6 +149,7 @@ for profile in ${PROFILES}; do
   docker run --rm \
     --network "${NETWORK}" \
     -e TEST_PROFILE="${profile}" \
+    -e RUN_ID="${RUN_ID}" \
     -e APIBASEURL="${APIBASEURL}" \
     -e UIBASEURL="${UIBASEURL}" \
     -e SELENOID_URL="${SELENOID_URL}" \
@@ -164,6 +171,50 @@ for profile in ${PROFILES}; do
     OVERALL_EXIT=1
   fi
 done
+
+# =====================================================================
+step "5. Allure-отчёт"
+generate_allure_report() {
+  if [ "${SKIP_ALLURE:-0}" = "1" ]; then
+    info "Пропущено (SKIP_ALLURE=1)"
+    return 0
+  fi
+  if ! command -v allure >/dev/null 2>&1; then
+    info "allure CLI не установлен — пропускаю (brew install allure)"
+    return 0
+  fi
+
+  # Собираем результаты всех профилей этого прогона в одну папку
+  local merged="${RESULTS_DIR}/${RUN_ID}_allure-results"
+  mkdir -p "${merged}"
+  for profile in ${PROFILES}; do
+    local src="${RESULTS_DIR}/${RUN_ID}_${profile}/allure-results"
+    if [ -d "${src}" ]; then
+      cp -r "${src}/." "${merged}/"
+    else
+      info "Нет allure-results для профиля ${profile}"
+    fi
+  done
+  if [ -z "$(ls -A "${merged}")" ]; then
+    info "Результатов Allure нет — отчёт не генерирую"
+    return 0
+  fi
+
+  # История: allure generate --clean удаляет старый отчёт, поэтому history копируем до генерации
+  if [ -d "${ALLURE_REPORT_DIR}/history" ]; then
+    cp -r "${ALLURE_REPORT_DIR}/history" "${merged}/"
+    info "История прошлых прогонов добавлена"
+  else
+    info "Истории ещё нет — это первый отчёт"
+  fi
+
+  allure generate "${merged}" -o "${ALLURE_REPORT_DIR}" --clean || {
+    fail "Не удалось сгенерировать Allure-отчёт"
+    return 0
+  }
+  info "Allure-отчёт: ${ALLURE_REPORT_DIR} (открыть: allure open ${ALLURE_REPORT_DIR})"
+}
+generate_allure_report
 
 # =====================================================================
 step "Итог"

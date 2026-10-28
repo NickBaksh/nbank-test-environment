@@ -4,6 +4,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selectors;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import common.helpers.StepLogger;
 import utils.AlertHelper;
 
 import static com.codeborne.selenide.Selenide.$;
@@ -34,29 +35,33 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
     }
 
     public EditProfilePage enterName(String name) {
-        assertThat(name).isNotNull();
+        return StepLogger.logWithScreenshot("Enter name '" + name + "'", () -> {
+            assertThat(name).isNotNull();
 
-        nameField.shouldBe(Condition.visible);
-        nameField.clear();
+            nameField.shouldBe(Condition.visible);
+            nameField.clear();
 
-        // Проверяем, что поле стало пустым
-        nameField.shouldHave(Condition.empty);
+            // Проверяем, что поле стало пустым
+            nameField.shouldHave(Condition.empty);
 
-        // Если имя не пустое и не состоит только из пробелов
-        if (name != null && !name.trim().isEmpty()) {
-            nameField.sendKeys(name);
-            nameField.shouldHave(Condition.value(name));
-        }
-        return this;
+            // Если имя не пустое и не состоит только из пробелов
+            if (name != null && !name.trim().isEmpty()) {
+                nameField.sendKeys(name);
+                nameField.shouldHave(Condition.value(name));
+            }
+            return this;
+        });
     }
 
     public EditProfilePage saveChanges() {
-        saveChangesButton
-                .shouldBe(Condition.visible)
-                .shouldBe(Condition.enabled)
-                .shouldBe(Condition.interactable)
-                .click();
-        return this;
+        return StepLogger.logWithScreenshot("Click Save Changes button", () -> {
+            saveChangesButton
+                    .shouldBe(Condition.visible)
+                    .shouldBe(Condition.enabled)
+                    .shouldBe(Condition.interactable)
+                    .click();
+            return this;
+        });
     }
 
     public EditProfilePage shouldShowAlert(String expectedMessage) {
@@ -66,14 +71,18 @@ public class EditProfilePage extends BasePage<EditProfilePage> {
     }
 
     public UserDashboard saveAndReturn() {
-        saveChangesButton.click();
-        switchTo().alert().accept();
-        return new UserDashboard();
+        return StepLogger.logWithScreenshot("Save changes and return to Dashboard", () -> {
+            saveChangesButton.click();
+            switchTo().alert().accept();
+            return new UserDashboard();
+        });
     }
 
     public EditProfilePage saveChangesAndVerifyAlert(String expectedMessage) {
-        // Кликаем и ждем alert с автоматическими повторными попытками
-        AlertHelper.clickAndVerifyAlert(saveChangesButton, expectedMessage);
-        return this;
+        return StepLogger.logWithScreenshot("Save changes and verify alert '" + expectedMessage + "'", () -> {
+            // Кликаем и ждем alert с автоматическими повторными попытками
+            AlertHelper.clickAndVerifyAlert(saveChangesButton, expectedMessage);
+            return this;
+        });
     }
 }
